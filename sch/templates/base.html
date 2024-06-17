@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />		<title>GHGS &#8211; School of Excellence for Better Tomorrow</title>
+<meta name='robots' content='max-image-preview:large' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link rel="alternate" type="application/rss+xml" title="Adesoye College Offa &raquo; Feed" href="https://adesoyecollege.org/feed/" />
+<link rel="alternate" type="application/rss+xml" title="Adesoye College Offa &raquo; Comments Feed" href="https://adesoyecollege.org/comments/feed/" />
+<script type="text/javascript">
+/* <![CDATA[ */
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/svg\/","svgExt":".svg","source":{"wpemoji":"https:\/\/adesoyecollege.org\/wp-includes\/js\/wp-emoji.js?ver=6.5.4","twemoji":"https:\/\/adesoyecollege.org\/wp-includes\/js\/twemoji.js?ver=6.5.4"}};
+/**
+ * @output wp-includes/js/wp-emoji-loader.js
+ */
+
+/**
+ * Emoji Settings as exported in PHP via _print_emoji_detection_script().
+ * @typedef WPEmojiSettings
+ * @type {object}
+ * @property {?object} source
+ * @property {?string} source.concatemoji
+ * @property {?string} source.twemoji
+ * @property {?string} source.wpemoji
+ * @property {?boolean} DOMReady
+ * @property {?Function} readyCallback
+ */
+
+/**
+ * Support tests.
+ * @typedef SupportTests
+ * @type {object}
+ * @property {?boolean} flag
+ * @property {?boolean} emoji
+ */
+
+/**
+ * IIFE to detect emoji support and load Twemoji if needed.
+ *
+ * @param {Window} window
+ * @param {Document} document
+ * @param {WPEmojiSettings} settings
+ */
+( function wpEmojiLoader( window, document, settings ) {
+	if ( typeof Promise === 'undefined' ) {
+		return;
+	}
+
+	var sessionStorageKey = 'wpEmojiSettingsSupports';
+	var tests = [ 'flag', 'emoji' ];
+
+	/**
+	 * Checks whether the browser supports offloading to a Worker.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @returns {boolean}
+	 */
+	function supportsWorkerOffloading() {
+		return (
+			typeof Worker !== 'undefined' &&
+			typeof OffscreenCanvas !== 'undefined' &&
+			typeof URL !== 'undefined' &&
+			URL.createObjectURL &&
+			typeof Blob !== 'undefined'
+		);
+	}
+
+	/**
+	 * @typedef SessionSupportTests
+	 * @type {object}
+	 * @property {number} timestamp
+	 * @property {SupportTests} supportTests
+	 */
+
+	/**
+	 * Get support tests from session.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @returns {?SupportTests} Support tests, or null if not set or older than 1 week.
+	 */
+	function getSessionSupportTests() {
+		try {
+			/** @type {SessionSupportTests} */
+			var item = JSON.parse(
+				sessionStorage.getItem( sessionStorageKey )
+			);
+			if (
+				typeof item === 'object' &&
+				typeof item.timestamp === 'number' &&
+				new Date().valueOf() < item.timestamp + 604800 && // Note: Number is a week in seconds.
+				typeof item.supportTests === 'object'
+			) {
+				return item.supportTests;
+			}
+		} catch ( e ) {}
+		return null;
+	}
+
+	/**
+	 * Persist the supports in session storage.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @param {SupportTests} supportTests Support tests.
+	 */
+	function setSessionSupportTests( supportTests ) {
+		try {
+			/** @type {SessionSupportTests} */
+			var item = {
+				supportTests: supportTests,
+				timestamp: new Date().valueOf()
+			};
+
+			sessionStorage.setItem(
+				sessionStorageKey,
+				JSON.stringify( item )
+			);
+		} catch ( e ) {}
+	}
+
+	/**
+	 * Checks if two sets of Emoji characters render the same visually.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 4.9.0
+	 *
+	 * @private
+	 *
+	 * @param {CanvasRenderingContext2D} context 2D Context.
+	 * @param {string} set1 Set of Emoji to test.
+	 * @param {string} set2 Set of Emoji to test.
+	 *
+	 * @return {boolean} True if the two sets render the same.
+	 */
+	function emojiSetsRenderIdentically( context, set1, set2 ) {
+		// Cleanup from previous test.
+		context.clearRect( 0, 0, context.canvas.width, context.canvas.height );
+		context.fillText( set1, 0, 0 );
+		var rendered1 = new Uint32Array(
+			context.getImageData(
+				0,
+				0,
+				context.canvas.width,
+				context.canvas.height
+			).data
+		);
+
+		// Cleanup from previous test.
+		context.clearRect( 0, 0, context.canvas.width, context.canvas.height );
+		context.fillText( set2, 0, 0 );
+		var rendered2 = new Uint32Array(
+			context.getImageData(
+				0,
+				0,
+				context.canvas.width,
+				context.canvas.height
+			).data
+		);
+
+		return rendered1.every( function ( rendered2Data, index ) {
+			return rendered2Data === rendered2[ index ];
+		} );
+	}
+
+	/**
+	 * Determines if the browser properly renders Emoji that Twemoji can supplement.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @private
+	 *
+	 * @param {CanvasRenderingContext2D} context 2D Context.
+	 * @param {string} type Whether to test for support of "flag" or "emoji".
+	 * @param {Function} emojiSetsRenderIdentically Reference to emojiSetsRenderIdentically function, needed due to minification.
+	 *
+	 * @return {boolean} True if the browser can render emoji, false if it cannot.
+	 */
+	function browserSupportsEmoji( context, type, emojiSetsRenderIdentically ) {
+		var isIdentical;
+
+		switch ( type ) {
+			case 'flag':
+				/*
+				 * Test for Transgender flag compatibility. Added in Unicode 13.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly (white flag emoji + transgender symbol).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83C\uDFF3\uFE0F\u200D\u26A7\uFE0F', // as a zero-width joiner sequence
+					'\uD83C\uDFF3\uFE0F\u200B\u26A7\uFE0F' // separated by a zero-width space
+				);
+
+				if ( isIdentical ) {
+					return false;
+				}
+
+				/*
+				 * Test for UN flag compatibility. This is the least supported of the letter locale flags,
+				 * so gives us an easy test for full support.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly ([U] + [N]).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83C\uDDFA\uD83C\uDDF3', // as the sequence of two code points
+					'\uD83C\uDDFA\u200B\uD83C\uDDF3' // as the two code points separated by a zero-width space
+				);
+
+				if ( isIdentical ) {
+					return false;
+				}
+
+				/*
+				 * Test for English flag compatibility. England is a country in the United Kingdom, it
+				 * does not have a two letter locale code but rather a five letter sub-division code.
+				 *
+				 * To test for support, we try to render it, and compare the rendering to how it would look if
+				 * the browser doesn't render it correctly (black flag emoji + [G] + [B] + [E] + [N] + [G]).
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					// as the flag sequence
+					'\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F',
+					// with each code point separated by a zero-width space
+					'\uD83C\uDFF4\u200B\uDB40\uDC67\u200B\uDB40\uDC62\u200B\uDB40\uDC65\u200B\uDB40\uDC6E\u200B\uDB40\uDC67\u200B\uDB40\uDC7F'
+				);
+
+				return ! isIdentical;
+			case 'emoji':
+				/*
+				 * Four and twenty blackbirds baked in a pie.
+				 *
+				 * To test for Emoji 15.0 support, try to render a new emoji: Blackbird.
+				 *
+				 * The Blackbird is a ZWJ sequence combining 🐦 Bird and ⬛ large black square.,
+				 *
+				 * 0x1F426 (\uD83D\uDC26) == Bird
+				 * 0x200D == Zero-Width Joiner (ZWJ) that links the code points for the new emoji or
+				 * 0x200B == Zero-Width Space (ZWS) that is rendered for clients not supporting the new emoji.
+				 * 0x2B1B == Large Black Square
+				 *
+				 * When updating this test for future Emoji releases, ensure that individual emoji that make up the
+				 * sequence come from older emoji standards.
+				 */
+				isIdentical = emojiSetsRenderIdentically(
+					context,
+					'\uD83D\uDC26\u200D\u2B1B', // as the zero-width joiner sequence
+					'\uD83D\uDC26\u200B\u2B1B' // separated by a zero-width space
+				);
+
+				return ! isIdentical;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks emoji support tests.
+	 *
+	 * This function may be serialized to run in a Worker. Therefore, it cannot refer to variables from the containing
+	 * scope. Everything must be passed by parameters.
+	 *
+	 * @since 6.3.0
+	 *
+	 * @private
+	 *
+	 * @param {string[]} tests Tests.
+	 * @param {Function} browserSupportsEmoji Reference to browserSupportsEmoji function, needed due to minification.
+	 * @param {Function} emojiSetsRenderIdentically Reference to emojiSetsRenderIdentically function, needed due to minification.
+	 *
+	 * @return {SupportTests} Support tests.
+	 */
+	function testEmojiSupports( tests, browserSupportsEmoji, emojiSetsRenderIdentically ) {
+		var canvas;
+		if (
+			typeof WorkerGlobalScope !== 'undefined' &&
+			self instanceof WorkerGlobalScope
+		) {
+			canvas = new OffscreenCanvas( 300, 150 ); // Dimensions are default for HTMLCanvasElement.
+		} else {
+			canvas = document.createElement( 'canvas' );
+		}
+
+		var context = canvas.getContext( '2d', { willReadFrequently: true } );
+
+		/*
+		 * Chrome on OS X added native emoji rendering in M41. Unfortunately,
+		 * it doesn't work when the font is bolder than 500 weight. So, we
+		 * check for bold rendering support to avoid invisible emoji in Chrome.
+		 */
+		context.textBaseline = 'top';
+		context.font = '600 32px Arial';
+
+		var supports = {};
+		tests.forEach( function ( test ) {
+			supports[ test ] = browserSupportsEmoji( context, test, emojiSetsRenderIdentically );
+		} );
+		return supports;
+	}
+
+	/**
+	 * Adds a script to the head of the document.
+	 *
+	 * @ignore
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param {string} src The url where the script is located.
+	 *
+	 * @return {void}
+	 */
+	function addScript( src ) {
+		var script = document.createElement( 'script' );
+		script.src = src;
+		script.defer = true;
+		document.head.appendChild( script );
+	}
+
+	settings.supports = {
+		everything: true,
+		everythingExceptFlag: true
+	};
+
+	// Create a promise for DOMContentLoaded since the worker logic may finish after the event has fired.
+	var domReadyPromise = new Promise( function ( resolve ) {
+		document.addEventListener( 'DOMContentLoaded', resolve, {
+			once: true
+		} );
+	} );
+
+	// Obtain the emoji support from the browser, asynchronously when possible.
+	new Promise( function ( resolve ) {
+		var supportTests = getSessionSupportTests();
+		if ( supportTests ) {
+			resolve( supportTests );
+			return;
+		}
+
+		if ( supportsWorkerOffloading() ) {
+			try {
+				// Note that the functions are being passed as arguments due to minification.
+				var workerScript =
+					'postMessage(' +
+					testEmojiSupports.toString() +
+					'(' +
+					[
+						JSON.stringify( tests ),
+						browserSupportsEmoji.toString(),
+						emojiSetsRenderIdentically.toString()
+					].join( ',' ) +
+					'));';
+				var blob = new Blob( [ workerScript ], {
+					type: 'text/javascript'
+				} );
+				var worker = new Worker( URL.createObjectURL( blob ), { name: 'wpTestEmojiSupports' } );
+				worker.onmessage = function ( event ) {
+					supportTests = event.data;
+					setSessionSupportTests( supportTests );
+					worker.terminate();
+					resolve( supportTests );
+				};
+				return;
+			} catch ( e ) {}
+		}
+
+		supportTests = testEmojiSupports( tests, browserSupportsEmoji, emojiSetsRenderIdentically );
+		setSessionSupportTests( supportTests );
+		resolve( supportTests );
+	} )
+		// Once the browser emoji support has been obtained from the session, finalize the settings.
+		.then( function ( supportTests ) {
+			/*
+			 * Tests the browser support for flag emojis and other emojis, and adjusts the
+			 * support settings accordingly.
+			 */
+			for ( var test in supportTests ) {
+				settings.supports[ test ] = supportTests[ test ];
+
+				settings.supports.everything =
+					settings.supports.everything && settings.supports[ test ];
+
+				if ( 'flag' !== test ) {
+					settings.supports.everythingExceptFlag =
+						settings.supports.everythingExceptFlag &&
+						settings.supports[ test ];
+				}
+			}
+
+			settings.supports.everythingExceptFlag =
+				settings.supports.everythingExceptFlag &&
+				! settings.supports.flag;
+
+			// Sets DOMReady to false and assigns a ready function to settings.
+			settings.DOMReady = false;
+			settings.readyCallback = function () {
+				settings.DOMReady = true;
+			};
+		} )
+		.then( function () {
+			return domReadyPromise;
+		} )
+		.then( function () {
+			// When the browser can not render everything we need to load a polyfill.
+			if ( ! settings.supports.everything ) {
+				settings.readyCallback();
+
+				var src = settings.source || {};
+
+				if ( src.concatemoji ) {
+					addScript( src.concatemoji );
+				} else if ( src.wpemoji && src.twemoji ) {
+					addScript( src.twemoji );
+					addScript( src.wpemoji );
+				}
+			}
+		} );
+} )( window, document, window._wpemojiSettings );
+
+/* ]]> */
+</script>
+<style id='wp-emoji-styles-inline-css' type='text/css'>
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<style id='classic-theme-styles-inline-css' type='text/css'>
+/**
+ * These rules are needed for backwards compatibility.
+ * They should match the button element rules in the base theme.json file.
+ */
+.wp-block-button__link {
+	color: #ffffff;
+	background-color: #32373c;
+	border-radius: 9999px; /* 100% causes an oval, but any explicit but really high value retains the pill shape. */
+
+	/* This needs a low specificity so it won't override the rules from the button element if defined in theme.json. */
+	box-shadow: none;
+	text-decoration: none;
+
+	/* The extra 2px are added to size solids the same as the outline versions.*/
+	padding: calc(0.667em + 2px) calc(1.333em + 2px);
+
+	font-size: 1.125em;
+}
+
+.wp-block-file__button {
+	background: #32373c;
+	color: #ffffff;
+	text-decoration: none;
+}
+
+</style>
+<style id='global-styles-inline-css' type='text/css'>
+body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}body .is-layout-flex{flex-wrap: wrap;align-items: center;}body .is-layout-flex > *{margin: 0;}body .is-layout-grid{display: grid;}body .is-layout-grid > *{margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+.wp-block-navigation a:where(:not(.wp-element-button)){color: inherit;}
+:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}
+:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}
+.wp-block-pullquote{font-size: 1.5em;line-height: 1.6;}
+</style>
+<link rel='stylesheet' id='contact-form-7-css' href='https://adesoyecollege.org/wp-content/plugins/contact-form-7/includes/css/styles.css?ver=5.9.3' type='text/css' media='all' />
+<link rel='stylesheet' id='tm-google-font-css' href='//fonts.googleapis.com/css?family=Poppins%3A400%2C400%2C400%2C400%2C400%2C400%2C400&#038;ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='animate-css' href='https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/css/animate.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='select2-css' href='https://adesoyecollege.org/wp-content/plugins/themeum-core/customizer/assets/select2/css/select2.min.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='magnific-popup-css' href='https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/css/magnific-popup.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='owl-carousel-css' href='https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/css/owl-carousel.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='themeum-core-css' href='https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/css/themeum-core.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='tutor-icon-css' href='https://adesoyecollege.org/wp-content/plugins/tutor/assets/css/tutor-icon.min.css?ver=2.4.0' type='text/css' media='all' />
+<link rel='stylesheet' id='tutor-css' href='https://adesoyecollege.org/wp-content/plugins/tutor/assets/css/tutor.min.css?ver=2.4.0' type='text/css' media='all' />
+<link rel='stylesheet' id='tutor-frontend-css' href='https://adesoyecollege.org/wp-content/plugins/tutor/assets/css/tutor-front.min.css?ver=2.4.0' type='text/css' media='all' />
+<style id='tutor-frontend-inline-css' type='text/css'>
+.mce-notification.mce-notification-error{display: none !important;}
+:root{--tutor-color-primary:#3E64DE;--tutor-color-primary-rgb:62, 100, 222;--tutor-color-primary-hover:#395BCA;--tutor-color-primary-hover-rgb:57, 91, 202;--tutor-body-color:#212327;--tutor-body-color-rgb:33, 35, 39;--tutor-border-color:#E3E5EB;--tutor-border-color-rgb:227, 229, 235;--tutor-color-gray:#CDCFD5;--tutor-color-gray-rgb:205, 207, 213;}
+</style>
+<link rel='stylesheet' id='wpeducon-font-css' href='https://fonts.googleapis.com/css?family=Open+Sans%3A300%2C400%2C600%2C700%2C800&#038;subset=latin' type='text/css' media='all' />
+<link rel='stylesheet' id='buttons-css' href='https://adesoyecollege.org/wp-includes/css/buttons.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='dashicons-css' href='https://adesoyecollege.org/wp-includes/css/dashicons.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='mediaelement-css' href='https://adesoyecollege.org/wp-includes/js/mediaelement/mediaelementplayer-legacy.min.css?ver=4.2.17' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-mediaelement-css' href='https://adesoyecollege.org/wp-includes/js/mediaelement/wp-mediaelement.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='media-views-css' href='https://adesoyecollege.org/wp-includes/css/media-views.css?ver=6.5.4' type='text/css' media='all' />
+<link rel='stylesheet' id='imgareaselect-css' href='https://adesoyecollege.org/wp-includes/js/imgareaselect/imgareaselect.css?ver=0.9.8' type='text/css' media='all' />
+<link rel='stylesheet' id='bootstrap-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/css/bootstrap.min.css?ver=all' type='text/css' media='all' />
+<link rel='stylesheet' id='font-awesome-css' href='https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/font-awesome/css/font-awesome.css?ver=4.7.0' type='text/css' media='all' />
+<link rel='stylesheet' id='wpeducon-main-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/css/main.css?ver=all' type='text/css' media='all' />
+<link rel='stylesheet' id='wpeducon-blog-detaills-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/css/blog-details.css?ver=all' type='text/css' media='all' />
+<link rel='stylesheet' id='wpeducon-responsive-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/css/responsive.css?ver=all' type='text/css' media='all' />
+<link rel='stylesheet' id='wpeducon-woocommerce-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/css/woocommerce.css?ver=all' type='text/css' media='all' />
+<link rel='stylesheet' id='wpeducon-style-css' href='https://adesoyecollege.org/wp-content/themes/wpeducon/style.css?ver=6.5.4' type='text/css' media='all' />
+<style id='wpeducon-style-inline-css' type='text/css'>
+a, .bottom-widget .contact-info i, #wp-megamenu-mainmenu>.wpmm-nav-wrap ul.wp-megamenu>li ul.wp-megamenu-sub-menu li a:hover, #wp-megamenu-mainmenu>.wpmm-nav-wrap ul.wp-megamenu>li>a:hover, .themeum-topstories-item .entry-date, .shortcode-upcoming-event .upcoming-event-content i, .notice-list-meta-date, .package-sidebar a:hover, .themeum-notice-list .thm-notice-data .notice-list-title a:hover, .themeum-notice-list .thm-notice-data .notice-list-cats a:hover, .blog-post-meta li a:hover,
+                    .adons-themeum-feature-course .owl-prev:hover, 
+                    .wp-block-freeform.block-library-rich-text__tinymce a, .adons-themeum-feature-course .owl-next:hover,
+                    .themeum-latest-post.themeum-latest-post-v2 .themeum-latest-post-content .entry-title a:hover,.single-event-meta > li > i,
+                    .themeum-topstories-item a, .widget ul li a:hover,.common-menu-wrap .sub-menu li.active > a,.entry-summary .post-meta-info-list-in a:hover,.woocommerce table.shop_table td a:hover,.woocommerce div.product p.price, .course-category-wraper .category-content span,
+                    .thm-profile .thm-profile-content .thm-profile-title.lms a:hover, .mod-lms-course-search .lms-icon-search,
+                    .tutor-custom-list-style li:before, .tutor-wrap nav.course-enrolled-nav ul li.active a,
+                    .tutor-course-topics-contents .tutor-course-title h4,.tutor-dashboard-permalinks a::before, 
+                    .tutor-dashboard-inline-links ul li a:hover, .tutor-dashboard-inline-links ul li.active a, 
+                    .tutor-mycourse-content h3 a:hover, .tutor-single-course-meta.tutor-lead-meta ul li a:hover, .tutor-single-course-meta ul li.tutor-social-share button:hover, .ui-datepicker a:hover, .ui-datepicker td:hover a,
+                    .woocommerce div.product span.price{ color: #e0af4e; }:root {
+                        --tutor-primary-color:#e0af4e;
+                        --tutor-primary-hover-color: #ffc94e;
+                    }.thm-profile .thm-profile-content .thm-profile-title.lms a:hover{ color: #e0af4e!important; }input:focus, textarea:focus, keygen:focus, select:focus, .mc4wp-form .mchimp-newsletter input[type=email], .edumax_btn.btn-fill:hover, .edumax_btn.btn-fill:hover { border-color: #e0af4e; }.package-list-content .package-list-title a:hover, .themeum-latest-post-content .entry-title a:hover, .thm-tk-search .thm-tk-search-nav ul li a:hover, .thm-tk-search .thm-tk-search-nav ul li a.active i, .thm-tk-search .thm-tk-search-nav ul li a.active, .ui-datepicker .ui-datepicker-calendar td:hover a, .package-sidebar .need-help p i, .package-share li a:hover, .tutor-course-loop-title a h2:hover { color: #e0af4e; }.single-event-content:hover, #wp-megamenu-mainmenu.wpmm-mobile-menu a.wpmm_mobile_menu_btn, .event-content-wrapper,.thm-tk-search .thm-tk-search-nav ul li a i:after, .select2-container--default .select2-results__option--highlighted[aria-selected] ,.select2-dropdown .select2-results .select2-results__options .select2-results__option:hover, .ui-slider .ui-slider-handle, .ui-datepicker .ui-datepicker-current-day a, .themeum-pagination ul li .page-numbers.current, .themeum-pagination ul li a:hover, .package-nav-tab.nav-tabs>li.active>a, .package-nav-tab.nav-tabs>li.active>a:focus, .package-nav-tab.nav-tabs>li.active>a:hover, .package-nav-tab.nav-tabs>li>a:hover,.latest-post-title,.title-leftborder:before, .addon-themeum-title .title-leftborder:before, .shortcode-upcoming-event .entry-date, .themeum-notice-list .notice-list-meta-date, .educon-blog-date, .entry-summary .wrap-btn-style .btn, .widget .tagcloud a, .single.single-post .post-navigation span>a, .comment-navigation .nav-previous a, .comment-navigation .nav-next a, .form-submit input[type=submit],.themeum-twitter .owl-dot.active>span,.contact-form-wrapper input[type="submit"], .conference-img a,
+                        .entry-summary input[type=submit],.woocommerce .product-thumbnail-outer-inner .addtocart-btn a.button,
+                        .product-thumbnail-outer:hover .product-content-wrapper,.woocommerce a.added_to_cart,
+                        .woocommerce-page table.cart td.actions input.button,.woocommerce #respond input#submit.alt, .woocommerce a.button.alt, .woocommerce button.button.alt, .woocommerce input.button.alt,.woocommerce .woocommerce-info,
+                        body.woocommerce-account .woocommerce-MyAccount-navigation ul li.is-active a,
+                        .tutor-loop-course-footer .tutor-loop-cart-btn-wrap a,
+                        .course-category-wraper .single-course-categories:hover,
+                        .edumax_btn.btn-fill:hover, .tutor-dashboard-permalinks li.active a, .page-template-default .tutor-dashboard-permalinks li a:hover, .tutor-profile-photo-upload-wrap a.tutor-profile-photo-upload-btn, .date-range-input button,
+                        .tutor-lead-info-btn-group a.tutor-button, .tutor-lead-info-btn-group .tutor-course-compelte-form-wrap button:hover
+                        { background: #e0af4e; }.btn.btn-slider:hover, .btn.btn-slider:focus,.tutor-course-enrolled-review-wrap .write-course-review-link-btn, a.tutor-button:hover, .tutor-button:hover, a.tutor-btn:hover, .tutor-btn:hover, .tutor-login-form-wrap input[type="submit"], .report-top-sub-menu a.active, 
+                .tutor-form-group.tutor-reg-form-btn-wrap .tutor-button, a.tutor-button, .tutor-button, .tutor-lead-info-btn-group a.tutor-button:hover { background-color: #e0af4e; border-color: #e0af4e; }.adons-themeum-feature-course .owl-prev:hover, .adons-themeum-feature-course .owl-next:hover, .tutor-login-form-wrap input[type="password"]:focus, .tutor-login-form-wrap input[type="text"]:focus, .tutor-form-group textarea:focus, .tutor-form-group input:not([type="submit"]):focus, .tutor-dashboard-inline-links ul li a:hover, .tutor-dashboard-inline-links ul li.active a{ border-color: #e0af4e; }a:hover, .widget.widget_rss ul li a{ color: #ffc94e; }.error-page-inner a.btn.btn-primary.btn-lg:hover,.btn.btn-primary:hover,input[type=button]:hover,
+                    .widget.widget_search #searchform .btn-search:hover, .themeum-notice-list:hover .notice-list-meta-date, .entry-summary .wrap-btn-style .btn:hover, .entry-summary .wrap-btn-style .btn:focus, .widget .tagcloud a:hover, .single.single-post .post-navigation span>a:hover, .single.single-post .post-navigation span>a:focus, .comment-navigation .nav-previous:hover a, .comment-navigation .nav-next a:hover, .form-submit input[type=submit]:hover,.contact-form-wrapper input[type="submit"]:hover,.educon-block,
+                    .product-thumbnail-outer .product-thumbnail-outer-inner .addtocart-btn a.button:hover,.woocommerce .product-thumbnail-outer .product-thumbnail-outer-inner a.added_to_cart:hover,
+
+                    .tutor-progress-bar .tutor-progress-filled,
+                    .single_add_to_cart_button, a.tutor-button:hover, .tutor-button:hover, a.tutor-btn, .tutor-btn, .tutor-login-form-wrap input[type="submit"]:hover
+                    { background-color: #ffc94e; }.woocommerce a.button:hover, .single.single-post .post-navigation span>a:hover, .single.single-post .post-navigation span>a:focus, .comment-navigation .nav-previous:hover a, .comment-navigation .nav-next a:hover,
+                    .tutor-wrap nav.course-enrolled-nav ul li.active a, 
+
+                    .single_add_to_cart_button, a.tutor-button:hover, .tutor-button:hover, a.tutor-btn, .tutor-btn, .tutor-login-form-wrap input[type="submit"]:hover
+
+                    { border-color: #ffc94e; }body{font-size:16px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #000000;}.common-menu-wrap .nav>li>a{font-size:16px;font-family:Poppins;font-weight: 400;line-height: 24px;}h1{font-size:46px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #777;}h2{font-size:36px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #777;}h3{font-size:26px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #777;}h4{font-size:18px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #777;}h5{font-size:16px;font-family:Poppins;font-weight: 400;line-height: 24px;color: #777;}.site-header.sticky{ position:fixed;top:0;left:auto; z-index:1000;margin:0 auto 30px; width:100%; background-color:rgba(0,0,0,0.3);}.site-header.sticky.header-transparent .main-menu-wrap{ margin-top: 0;}.site-header.sticky.common-menu-wrap .nav>li>a{ color: #9d9d9d;}.site-header.sticky{ background-color: #fff;}.site-header{ padding-top: 0px; }.site-header{ padding-bottom: 0px; }body{ background-color: #f6f6f7; }.topbar{ background-color: #1c1c1c; }.topbar,.topbar a{ color: rgba(255,255,255,0.6); }.site-header{ background-color: #ffffff; }.bottom{ background-color: #20232e; }.mc4wp-form-fields input[type=submit], .common-menu-wrap .nav>li.online-booking-button a, .error-page-inner a.btn.btn-primary.btn-lg,.btn.btn-primary, .package-list-button{ background-color: #e0af4e; border-color: #e0af4e; color: #fff !important; }.mc4wp-form-fields input[type=submit]:hover, .common-menu-wrap .nav>li.online-booking-button a:hover, .error-page-inner a.btn.btn-primary.btn-lg:hover,.btn.btn-primary:hover, .package-list-button:hover,.btn.btn-transparent:hover{ background-color: #ffc94e; border-color: #ffc94e; color: #fff !important; }.common-menu-wrap .nav>li.menu-item-has-children:after, .header-borderimage .common-menu-wrap .nav>li.menu-item-has-children:after, .common-menu-wrap .nav>li>a, .header-borderimage .common-menu-wrap .nav>li>a{ color: #000000; }.common-menu-wrap .nav>li:hover>a, .common-menu-wrap .nav>li:hover>a:after, .common-menu-wrap .nav>li.active>a:after, .common-menu-wrap .nav>li.active>a, .common-menu-wrap .nav>li.current-menu-ancestor > a, .common-menu-wrap .nav>li.current-menu-ancestor > a:after{ color: #e0af4e; }.common-menu-wrap .nav>li>a:before{ background-color: #e0af4e; }.footer-wrap{ background-color: #1b1d26; padding-top: 26px; padding-bottom: 26px; }.footer-wrap{ color: #fff; }.footer-wrap a{ color: #3f51b5; }.footer-wrap a:hover{ color: #1b32b5; }.footer-wrap .social-share li a{ color: #fff; }.footer-wrap .social-share li a:hover{ color: #00aeef; }.bottom{ border-top-color: #20232e; padding-top: 85px; padding-bottom: 85px; }.bottom, .bottom-widget .contact-info p{ color: #959595; }.bottom-widget .widget-title{ color: #ffffff; }.bottom a, .widget ul li a{ color: #959595; }.bottom a:hover{ color: #ffffff; }.common-menu-wrap .nav>li ul{ background-color: #f5f5f5; }.common-menu-wrap .nav>li>ul li a{ color: #000000; border-color: #eef0f2; }.common-menu-wrap .nav>li>.megamenu-container > ul li a, .common-menu-wrap .nav>li>ul li a, .common-menu-wrap .nav>li ul div.custom-output{ color: #000000; }.common-menu-wrap .nav>li>ul li a:hover{ color: #e0af4e; background-color: #e0af4e; }.common-menu-wrap .nav>li>.megamenu-container > ul li a:hover, .common-menu-wrap .nav>li>ul li a:hover, .common-menu-wrap .nav>li>.megamenu-container > ul li.active > a, .common-menu-wrap .megamenu li.active > a{ color: #e0af4e; }.common-menu-wrap .nav>li > ul::after{ border-color: transparent transparent #f5f5f5 transparent; }.themeum-navbar-header .themeum-navbar-brand img{width:100px;max-width:none;}.themeum-navbar-header .themeum-navbar-brand img{height:90px;}.subtitle-cover h2{font-size:60px;color:#fff;}.page-subleading{font-size:18px;color:#fff;}.subtitle-cover{padding:100px 0 100px; margin-bottom: 100px;}body.error404,body.page-template-404{
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            background: #333 url() no-repeat 100% 0;
+        }.full-width-events .col-md-3 .entry-date-overlayer{ background-color:#e0af4e; }.full-width-events:hover .col-md-3 .entry-date-overlayer{ background-color:#ffc94e; }.topbar a:hover{ color:#fff; }
+</style>
+<link rel='stylesheet' id='elementor-frontend-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/custom-frontend.css?ver=1701722158' type='text/css' media='all' />
+<link rel='stylesheet' id='eael-general-css' href='https://adesoyecollege.org/wp-content/plugins/essential-addons-for-elementor-lite/assets/front-end/css/view/general.min.css?ver=5.8.9' type='text/css' media='all' />
+<link rel='stylesheet' id='eael-6089-css' href='https://adesoyecollege.org/wp-content/uploads/essential-addons-elementor/eael-6089.css?ver=1709810139' type='text/css' media='all' />
+<link rel='stylesheet' id='swiper-css' href='https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/swiper/v8/css/swiper.css?ver=8.4.5' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-4794-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-4794.css?ver=1701722155' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-pro-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/custom-pro-frontend.css?ver=1701722159' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-6089-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-6089.css?ver=1709806925' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-10618-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-10618.css?ver=1705310931' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-10930-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-10930.css?ver=1708601812' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-8498-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-8498.css?ver=1716372860' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-5358-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-5358.css?ver=1701722154' type='text/css' media='all' />
+<link rel='stylesheet' id='elementor-post-6544-css' href='https://adesoyecollege.org/wp-content/uploads/elementor/css/post-6544.css?ver=1713885862' type='text/css' media='all' />
+<link rel='stylesheet' id='google-fonts-1-css' href='https://fonts.googleapis.com/css?family=Poppins%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic%7CRubik%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic%7COpen+Sans%3A100%2C100italic%2C200%2C200italic%2C300%2C300italic%2C400%2C400italic%2C500%2C500italic%2C600%2C600italic%2C700%2C700italic%2C800%2C800italic%2C900%2C900italic&#038;display=auto&#038;ver=6.5.4' type='text/css' media='all' />
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin><script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/jquery.js?ver=3.7.1" id="jquery-core-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/jquery-migrate.js?ver=3.4.1" id="jquery-migrate-js"></script>
+<script type="text/javascript" id="ajax-login-script-js-extra">
+/* <![CDATA[ */
+var ajax_login_object = {"ajaxurl":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","redirecturl":"https:\/\/adesoyecollege.org\/","loadingmessage":"Sending user info, please wait..."};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/lib/ajax-login-script.js?ver=6.5.4" id="ajax-login-script-js"></script>
+<script type="text/javascript" id="qubely_local_script-js-extra">
+/* <![CDATA[ */
+var qubely_urls = {"plugin":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/qubely\/","ajax":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","nonce":"d9136fc340","actual_url":"adesoyecollege.org"};
+/* ]]> */
+</script>
+<script type="text/javascript" id="qubely_container_width-js-extra">
+/* <![CDATA[ */
+var qubely_container_width = {"sm":"540","md":"720","lg":"960","xl":"1140"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/jquery-ui.js?ver=6.5.4" id="jquery-datepicker-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/ui/core.js?ver=1.13.2" id="jquery-ui-core-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/ui/mouse.js?ver=1.13.2" id="jquery-ui-mouse-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/ui/slider.js?ver=1.13.2" id="jquery-ui-slider-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/wow.js?ver=6.5.4" id="wow-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/customizer/assets/select2/js/select2.js?ver=6.5.4" id="select2-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/ui/datepicker.js?ver=1.13.2" id="jquery-ui-datepicker-js"></script>
+<script type="text/javascript" id="jquery-ui-datepicker-js-after">
+/* <![CDATA[ */
+jQuery(function(jQuery){jQuery.datepicker.setDefaults({"closeText":"Close","currentText":"Today","monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthNamesShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"nextText":"Next","prevText":"Previous","dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"dayNamesShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"dayNamesMin":["S","M","T","W","T","F","S"],"dateFormat":"MM d, yy","firstDay":1,"isRTL":false});});
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/jquery-ui-timepicker-addon.js?ver=6.5.4" id="timepicker-js"></script>
+<script type="text/javascript" id="main-js-extra">
+/* <![CDATA[ */
+var thm_flight = {"ajax_url":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/main.js?ver=6.5.4" id="main-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/owl-carousel-min.js?ver=6.5.4" id="owl-carousel-min-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/jquery.magnific-popup.min.js?ver=6.5.4" id="jquery.magnific-popup.min-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/themeum-core/assets/js/jquery.countdown.min.js?ver=6.5.4" id="countdown-js"></script>
+<script type="text/javascript" id="utils-js-extra">
+/* <![CDATA[ */
+var userSettings = {"url":"\/","uid":"0","time":"1718488044","secure":"1"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/utils.js?ver=6.5.4" id="utils-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/plupload/moxie.js?ver=1.3.5" id="moxiejs-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/plupload/plupload.js?ver=2.1.9" id="plupload-js"></script>
+<!--[if lt IE 8]>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/json2.js?ver=2015-05-03" id="json2-js"></script>
+<![endif]-->
+<link rel="https://api.w.org/" href="https://adesoyecollege.org/wp-json/" /><link rel="alternate" type="application/json" href="https://adesoyecollege.org/wp-json/wp/v2/pages/6089" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://adesoyecollege.org/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 6.5.4" />
+<meta name="generator" content="TutorLMS 2.4.0" />
+<link rel="canonical" href="https://adesoyecollege.org/" />
+<link rel='shortlink' href='https://adesoyecollege.org/' />
+<link rel="alternate" type="application/json+oembed" href="https://adesoyecollege.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fadesoyecollege.org%2F" />
+<link rel="alternate" type="text/xml+oembed" href="https://adesoyecollege.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fadesoyecollege.org%2F&#038;format=xml" />
+		<script type="text/javascript">
+				(function(c,l,a,r,i,t,y){
+					c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;
+					t.src="https://www.clarity.ms/tag/"+i+"?ref=wordpress";y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+				})(window, document, "clarity", "script", "iy1lg137rx");
+		</script>
+		<meta name="generator" content="Elementor 3.21.8; features: e_optimized_assets_loading, e_optimized_css_loading, e_font_icon_svg, additional_custom_breakpoints, e_lazyload; settings: css_print_method-external, google_font-enabled, font_display-auto">
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-12WCGCZVNB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-12WCGCZVNB');
+</script>
+<style type="text/css">.recentcomments a{display:inline !important;padding:0 !important;margin:0 !important;}</style>			<style>
+				.e-con.e-parent:nth-of-type(n+4):not(.e-lazyloaded):not(.e-no-lazyload),
+				.e-con.e-parent:nth-of-type(n+4):not(.e-lazyloaded):not(.e-no-lazyload) * {
+					background-image: none !important;
+				}
+				@media screen and (max-height: 1024px) {
+					.e-con.e-parent:nth-of-type(n+3):not(.e-lazyloaded):not(.e-no-lazyload),
+					.e-con.e-parent:nth-of-type(n+3):not(.e-lazyloaded):not(.e-no-lazyload) * {
+						background-image: none !important;
+					}
+				}
+				@media screen and (max-height: 640px) {
+					.e-con.e-parent:nth-of-type(n+2):not(.e-lazyloaded):not(.e-no-lazyload),
+					.e-con.e-parent:nth-of-type(n+2):not(.e-lazyloaded):not(.e-no-lazyload) * {
+						background-image: none !important;
+					}
+				}
+			</style>
+			<link rel="icon" href="" sizes="32x32" />
+<link rel="icon" href="{{logo.img.url}}" sizes="192x192" /><!--this-->
+<link rel="apple-touch-icon" href="" />
+<meta name="msapplication-TileImage" content="" />
+<style type="text/css"></style>		<style type="text/css" id="wp-custom-css">
+			.wp-megamenu ul.wp-megamenu-sub-menu {
+    background: #fff !important;
+}
+.wp-megamenu ul.wp-megamenu-sub-menu {
+    background: #fff !important;
+}
+.wp-megamenu >li > ul.wp-megamenu-sub-menu li > a {
+    font-size: 14px !important;
+}
+.edumax-courses-wrap .row {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+/** Start Block Kit CSS: 144-3-3a7d335f39a8579c20cdf02f8d462582 **/
+
+.envato-block__preview{overflow: visible;}
+
+/* Envato Kit 141 Custom Styles - Applied to the element under Advanced */
+
+.elementor-headline-animation-type-drop-in .elementor-headline-dynamic-wrapper{
+	text-align: center;
+}
+.envato-kit-141-top-0 h1,
+.envato-kit-141-top-0 h2,
+.envato-kit-141-top-0 h3,
+.envato-kit-141-top-0 h4,
+.envato-kit-141-top-0 h5,
+.envato-kit-141-top-0 h6,
+.envato-kit-141-top-0 p {
+	margin-top: 0;
+}
+
+.envato-kit-141-newsletter-inline .elementor-field-textual.elementor-size-md {
+	padding-left: 1.5rem;
+	padding-right: 1.5rem;
+}
+
+.envato-kit-141-bottom-0 p {
+	margin-bottom: 0;
+}
+
+.envato-kit-141-bottom-8 .elementor-price-list .elementor-price-list-item .elementor-price-list-header {
+	margin-bottom: .5rem;
+}
+
+.envato-kit-141.elementor-widget-testimonial-carousel.elementor-pagination-type-bullets .swiper-container {
+	padding-bottom: 52px;
+}
+
+.envato-kit-141-display-inline {
+	display: inline-block;
+}
+
+.envato-kit-141 .elementor-slick-slider ul.slick-dots {
+	bottom: -40px;
+}
+
+/** End Block Kit CSS: 144-3-3a7d335f39a8579c20cdf02f8d462582 **/
+
+
+
+/** Start Block Kit CSS: 71-3-d415519effd9e11f35d2438c58ea7ebf **/
+
+.envato-block__preview{overflow: visible;}
+
+/** End Block Kit CSS: 71-3-d415519effd9e11f35d2438c58ea7ebf **/
+
+
+
+/** Start Block Kit CSS: 72-3-34d2cc762876498c8f6be5405a48e6e2 **/
+
+.envato-block__preview{overflow: visible;}
+
+/*Kit 69 Custom Styling for buttons */
+.envato-kit-69-slide-btn .elementor-button,
+.envato-kit-69-cta-btn .elementor-button,
+.envato-kit-69-flip-btn .elementor-button{
+	border-left: 0px !important;
+	border-bottom: 0px !important;
+	border-right: 0px !important;
+	padding: 15px 0 0 !important;
+}
+.envato-kit-69-slide-btn .elementor-slide-button:hover,
+.envato-kit-69-cta-btn .elementor-button:hover,
+.envato-kit-69-flip-btn .elementor-button:hover{
+	margin-bottom: 20px;
+}
+.envato-kit-69-menu .elementor-nav-menu--main a:hover{
+	margin-top: -7px;
+	padding-top: 4px;
+	border-bottom: 1px solid #FFF;
+}
+/* Fix menu dropdown width */
+.envato-kit-69-menu .elementor-nav-menu--dropdown{
+	width: 100% !important;
+}
+
+/** End Block Kit CSS: 72-3-34d2cc762876498c8f6be5405a48e6e2 **/
+
+
+
+/** Start Block Kit CSS: 142-3-a175df65179b9ef6a5ca9f1b2c0202b9 **/
+
+.envato-block__preview{
+	overflow: visible;
+}
+
+/* Border Radius */
+.envato-kit-139-accordion .elementor-widget-container{
+	border-radius: 10px !important;
+}
+.envato-kit-139-map iframe,
+.envato-kit-139-slider .slick-slide,
+.envato-kit-139-flipbox .elementor-flip-box div{
+		border-radius: 10px !important;
+
+}
+
+
+/** End Block Kit CSS: 142-3-a175df65179b9ef6a5ca9f1b2c0202b9 **/
+
+
+
+
+/** Start Block Kit CSS: 135-3-c665d4805631b9a8bf464e65129b2f58 **/
+
+.envato-block__preview{overflow: visible;}
+
+/** End Block Kit CSS: 135-3-c665d4805631b9a8bf464e65129b2f58 **/
+
+
+
+/** Start Block Kit CSS: 143-3-7969bb877702491bc5ca272e536ada9d **/
+
+.envato-block__preview{overflow: visible;}
+/* Material Button Click Effect */
+.envato-kit-140-material-hit .menu-item a,
+.envato-kit-140-material-button .elementor-button{
+  background-position: center;
+  transition: background 0.8s;
+}
+.envato-kit-140-material-hit .menu-item a:hover,
+.envato-kit-140-material-button .elementor-button:hover{
+  background: radial-gradient(circle, transparent 1%, #fff 1%) center/15000%;
+}
+.envato-kit-140-material-hit .menu-item a:active,
+.envato-kit-140-material-button .elementor-button:active{
+  background-color: #FFF;
+  background-size: 100%;
+  transition: background 0s;
+}
+
+/* Field Shadow */
+.envato-kit-140-big-shadow-form .elementor-field-textual{
+	box-shadow: 0 20px 30px rgba(0,0,0, .05);
+}
+
+/* FAQ */
+.envato-kit-140-faq .elementor-accordion .elementor-accordion-item{
+	border-width: 0 0 1px !important;
+}
+
+/* Scrollable Columns */
+.envato-kit-140-scrollable{
+	 height: 100%;
+   overflow: auto;
+   overflow-x: hidden;
+}
+
+/* ImageBox: No Space */
+.envato-kit-140-imagebox-nospace:hover{
+	transform: scale(1.1);
+	transition: all 0.3s;
+}
+.envato-kit-140-imagebox-nospace figure{
+	line-height: 0;
+}
+
+.envato-kit-140-slide .elementor-slide-content{
+	background: #FFF;
+	margin-left: -60px;
+	padding: 1em;
+}
+.envato-kit-140-carousel .slick-active:not(.slick-current)  img{
+	padding: 20px !important;
+	transition: all .9s;
+}
+
+/** End Block Kit CSS: 143-3-7969bb877702491bc5ca272e536ada9d **/
+
+		</style>
+		</head>
+
+        <body>
+           
+   <!-- HEADER END -->	<!-- header end -->
+
+
+		<div data-elementor-type="header" data-elementor-id="5358" class="elementor elementor-5358 elementor-location-header" data-elementor-post-type="elementor_library">
+            <header class="elementor-section elementor-top-section elementor-element elementor-element-4fe1bdac elementor-section-full_width elementor-section-content-middle elementor-hidden-mobile animated-fast elementor-hidden-tablet elementor-section-height-default elementor-section-height-default elementor-invisible" data-id="4fe1bdac" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;,&quot;sticky&quot;:&quot;top&quot;,&quot;sticky_on&quot;:[&quot;desktop&quot;,&quot;tablet&quot;],&quot;animation&quot;:&quot;fadeInDown&quot;,&quot;sticky_offset&quot;:0,&quot;sticky_effects_offset&quot;:0}">
+                <div class="elementor-container elementor-column-gap-no">
+            <div class="elementor-column elementor-col-25 elementor-top-column elementor-element elementor-element-119c893" data-id="119c893" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;gradient&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-208ce4a elementor-position-left elementor-vertical-align-middle elementor-view-default elementor-mobile-position-top elementor-widget elementor-widget-icon-box" data-id="208ce4a" data-element_type="widget" data-widget_type="icon-box.default">
+        <div class="elementor-widget-container">
+            <div class="elementor-icon-box-wrapper">
+
+                <!--div class="elementor-icon-box-icon">
+        <a href="tel:+2348091030012" target="_blank" class="elementor-icon elementor-animation-grow-rotate" tabindex="-1">
+        <svg aria-hidden="true" class="e-font-icon-svg e-fas-phone-alt" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M497.39 361.8l-112-48a24 24 0 0 0-28 6.9l-49.6 60.6A370.66 370.66 0 0 1 130.6 204.11l60.6-49.6a23.94 23.94 0 0 0 6.9-28l-48-112A24.16 24.16 0 0 0 122.6.61l-104 24A24 24 0 0 0 0 48c0 256.5 207.9 464 464 464a24 24 0 0 0 23.4-18.6l24-104a24.29 24.29 0 0 0-14.01-27.6z"></path></svg>				</a>
+    </div-->
+    
+                <!--div class="elementor-icon-box-content">
+
+                            <span class="elementor-icon-box-title">
+                <a href="tel:+2348091030012" target="_blank" >
+                    +234 809 103 0012<gwmw style="display:none;"></gwmw>						</a>
+            </span>
+        
+        
+    </div-->
+    
+</div>
+        </div>
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-25 elementor-top-column elementor-element elementor-element-c3b9fa8 elementor-invisible" data-id="c3b9fa8" data-element_type="column" data-settings="{&quot;animation&quot;:&quot;fadeInDown&quot;,&quot;background_background&quot;:&quot;gradient&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-078352a elementor-position-left elementor-vertical-align-middle elementor-view-default elementor-mobile-position-top elementor-widget elementor-widget-icon-box" data-id="078352a" data-element_type="widget" data-widget_type="icon-box.default">
+        <div class="elementor-widget-container">
+            <div class="elementor-icon-box-wrapper">
+
+                <!--div class="elementor-icon-box-icon">
+        <a href="mailto:hos@adesoyecollege.org" class="elementor-icon elementor-animation-pulse-grow" tabindex="-1">
+        <svg aria-hidden="true" class="e-font-icon-svg e-far-envelope-open" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M494.586 164.516c-4.697-3.883-111.723-89.95-135.251-108.657C337.231 38.191 299.437 0 256 0c-43.205 0-80.636 37.717-103.335 55.859-24.463 19.45-131.07 105.195-135.15 108.549A48.004 48.004 0 0 0 0 201.485V464c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V201.509a48 48 0 0 0-17.414-36.993zM464 458a6 6 0 0 1-6 6H54a6 6 0 0 1-6-6V204.347c0-1.813.816-3.526 2.226-4.665 15.87-12.814 108.793-87.554 132.364-106.293C200.755 78.88 232.398 48 256 48c23.693 0 55.857 31.369 73.41 45.389 23.573 18.741 116.503 93.493 132.366 106.316a5.99 5.99 0 0 1 2.224 4.663V458zm-31.991-187.704c4.249 5.159 3.465 12.795-1.745 16.981-28.975 23.283-59.274 47.597-70.929 56.863C336.636 362.283 299.205 400 256 400c-43.452 0-81.287-38.237-103.335-55.86-11.279-8.967-41.744-33.413-70.927-56.865-5.21-4.187-5.993-11.822-1.745-16.981l15.258-18.528c4.178-5.073 11.657-5.843 16.779-1.726 28.618 23.001 58.566 47.035 70.56 56.571C200.143 320.631 232.307 352 256 352c23.602 0 55.246-30.88 73.41-45.389 11.994-9.535 41.944-33.57 70.563-56.568 5.122-4.116 12.601-3.346 16.778 1.727l15.258 18.526z"></path></svg>				</a>
+    </div-->
+    
+                <!--div class="elementor-icon-box-content">
+
+                            <span class="elementor-icon-box-title">
+                <a href="mailto:hos@adesoyecollege.org" >
+                    admission@adesoyecollegelms.org						</a>
+            </span>
+        
+        
+    </div-->
+    
+</div>
+        </div>
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-25 elementor-top-column elementor-element elementor-element-5405cf53 elementor-hidden-phone" data-id="5405cf53" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;gradient&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-63a4e81a elementor-shape-square elementor-grid-0 e-grid-align-center elementor-invisible elementor-widget elementor-widget-social-icons" data-id="63a4e81a" data-element_type="widget" data-settings="{&quot;_animation&quot;:&quot;fadeInDown&quot;}" data-widget_type="social-icons.default">
+        <!--div class="elementor-widget-container">
+            <div class="elementor-social-icons-wrapper elementor-grid">
+                    <span class="elementor-grid-item">
+            <a class="elementor-icon elementor-social-icon elementor-social-icon-facebook-f elementor-animation-push elementor-repeater-item-320e991" href="https://web.facebook.com/adesoyecollegeoffaexcellence" target="_blank">
+                <span class="elementor-screen-only">Facebook-f</span>
+                <svg class="e-font-icon-svg e-fab-facebook-f" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"></path></svg>					</a>
+        </span>
+                    <span class="elementor-grid-item">
+            <a class="elementor-icon elementor-social-icon elementor-social-icon-instagram elementor-animation-push elementor-repeater-item-8206083" href="https://www.instagram.com/adesoyecollegeoffa" target="_blank">
+                <span class="elementor-screen-only">Instagram</span>
+                <svg class="e-font-icon-svg e-fab-instagram" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>					</a>
+        </span>
+                    <span class="elementor-grid-item">
+            <a class="elementor-icon elementor-social-icon elementor-social-icon-youtube elementor-animation-push elementor-repeater-item-dccfaf9" href="https://www.youtube.com/channel/UCwLLAN5FvuGGN6_kYJmCYsw" target="_blank">
+                <span class="elementor-screen-only">Youtube</span>
+                <svg class="e-font-icon-svg e-fab-youtube" viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"></path></svg>					</a>
+        </span>
+                    <span class="elementor-grid-item">
+            <a class="elementor-icon elementor-social-icon elementor-social-icon-linkedin elementor-animation-push elementor-repeater-item-9dfa31d" href="https://www.linkedin.com/company/adesoyecollegeoffaexcellence/" target="_blank">
+                <span class="elementor-screen-only">Linkedin</span>
+                <svg class="e-font-icon-svg e-fab-linkedin" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"></path></svg>					</a>
+        </span>
+            </div>
+        </div-->
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-25 elementor-top-column elementor-element elementor-element-21c5b4d2" data-id="21c5b4d2" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;gradient&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-2fc0605 elementor-nav-menu__align-center elementor-nav-menu--dropdown-none elementor-widget elementor-widget-nav-menu" data-id="2fc0605" data-element_type="widget" data-settings="{&quot;submenu_icon&quot;:{&quot;value&quot;:&quot;&lt;svg class=\&quot;fa-svg-chevron-down e-font-icon-svg e-fas-chevron-down\&quot; viewBox=\&quot;0 0 448 512\&quot; xmlns=\&quot;http:\/\/www.w3.org\/2000\/svg\&quot;&gt;&lt;path d=\&quot;M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z\&quot;&gt;&lt;\/path&gt;&lt;\/svg&gt;&quot;,&quot;library&quot;:&quot;fa-solid&quot;},&quot;layout&quot;:&quot;horizontal&quot;}" data-widget_type="nav-menu.default">
+        <div class="elementor-widget-container">
+                <!--nav class="elementor-nav-menu--main elementor-nav-menu__container elementor-nav-menu--layout-horizontal e--pointer-text e--animation-float">
+        <ul id="menu-1-2fc0605" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10309"><a href="https://adesoyecollege.org/schooladmin/students" onClick="return true" class="elementor-item">Check Result</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4058"><a href="https://adesoyecollege.org/applicationnew" onClick="return true" class="elementor-item">Application Form</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4057"><a href="https://adesoyecollegelms.org/" onClick="return true" class="elementor-item">E-Learning</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-5434"><a href="https://adesoyecollege.org/?page_id=5130" onClick="return true" class="elementor-item">DSTP Form</a></li>
+</ul>			</nav>
+                <nav class="elementor-nav-menu--dropdown elementor-nav-menu__container" aria-hidden="true">
+        <ul id="menu-2-2fc0605" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10309"><a href="https://adesoyecollege.org/schooladmin/students" onClick="return true" class="elementor-item" tabindex="-1">Check Result</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4058"><a href="https://adesoyecollege.org/applicationnew" onClick="return true" class="elementor-item" tabindex="-1">Application Form</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4057"><a href="https://adesoyecollegelms.org/" onClick="return true" class="elementor-item" tabindex="-1">E-Learning</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-5434"><a href="https://adesoyecollege.org/?page_id=5130" onClick="return true" class="elementor-item" tabindex="-1">DSTP Form</a></li>
+</ul>			</nav-->
+        </div>
+        </div>
+            </div>
+</div>
+            </div>
+</header>
+
+        <main class="elementor-section elementor-top-section elementor-element elementor-element-64b9677 elementor-section-full_width elementor-section-content-top elementor-hidden-desktop elementor-section-height-default elementor-section-height-default" data-id="64b9677" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;,&quot;sticky&quot;:&quot;top&quot;,&quot;sticky_on&quot;:[&quot;desktop&quot;,&quot;tablet&quot;,&quot;mobile&quot;],&quot;sticky_offset&quot;:0,&quot;sticky_effects_offset&quot;:0}">
+                <div class="elementor-container elementor-column-gap-default">
+            <div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-35d9217" data-id="35d9217" data-element_type="column">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-2ea424f8 elementor-nav-menu__align-start elementor-nav-menu--stretch elementor-widget__width-auto elementor-hidden-desktop elementor-nav-menu--dropdown-tablet elementor-nav-menu__text-align-aside elementor-nav-menu--toggle elementor-nav-menu--burger elementor-widget elementor-widget-nav-menu" data-id="2ea424f8" data-element_type="widget" data-settings="{&quot;full_width&quot;:&quot;stretch&quot;,&quot;submenu_icon&quot;:{&quot;value&quot;:&quot;&lt;svg class=\&quot;fa-svg-chevron-down e-font-icon-svg e-fas-chevron-down\&quot; viewBox=\&quot;0 0 448 512\&quot; xmlns=\&quot;http:\/\/www.w3.org\/2000\/svg\&quot;&gt;&lt;path d=\&quot;M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z\&quot;&gt;&lt;\/path&gt;&lt;\/svg&gt;&quot;,&quot;library&quot;:&quot;fa-solid&quot;},&quot;layout&quot;:&quot;horizontal&quot;,&quot;toggle&quot;:&quot;burger&quot;}" data-widget_type="nav-menu.default">
+        <div class="elementor-widget-container">
+                <nav class="elementor-nav-menu--main elementor-nav-menu__container elementor-nav-menu--layout-horizontal e--pointer-text e--animation-float">
+        <ul id="menu-1-2ea424f8" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10309"><a href="https://adesoyecollege.org/schooladmin/students" onClick="return true" class="elementor-item">Check Result</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4058"><a href="https://adesoyecollege.org/applicationnew" onClick="return true" class="elementor-item">Application Form</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4057"><a href="https://adesoyecollegelms.org/" onClick="return true" class="elementor-item">E-Learning</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-5434"><a href="https://adesoyecollege.org/?page_id=5130" onClick="return true" class="elementor-item">DSTP Form</a></li>
+</ul>			</nav>
+            <div>
+                
+                <a href=""><img src="{{logo.img2.url}}"></a>
+            </div>
+        </div>
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-4c54e3b" data-id="4c54e3b" data-element_type="column">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-983a3e9 elementor-widget__width-initial elementor-hidden-desktop elementor-widget-tablet__width-initial elementor-hidden-mobile elementor-widget elementor-widget-theme-site-logo elementor-widget-image" data-id="983a3e9" data-element_type="widget" data-widget_type="theme-site-logo.default">
+        <div class="elementor-widget-container">
+                            <a href="https://adesoyecollege.org">
+    <img src="{{logo.image.url}}" title="ACO-Logo-N" alt="ACO-Logo-N" loading="lazy" />				</a>
+                            </div>
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-33 elementor-top-column elementor-element elementor-element-205f821" data-id="205f821" data-element_type="column">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-ddef0c1 elementor-hidden-desktop elementor-nav-menu--stretch elementor-widget__width-auto elementor-nav-menu--dropdown-tablet elementor-nav-menu__text-align-aside elementor-nav-menu--toggle elementor-nav-menu--burger elementor-widget elementor-widget-nav-menu" data-id="ddef0c1" data-element_type="widget" data-settings="{&quot;submenu_icon&quot;:{&quot;value&quot;:&quot;&lt;svg class=\&quot;fa-svg-chevron-down e-font-icon-svg e-fas-chevron-down\&quot; viewBox=\&quot;0 0 448 512\&quot; xmlns=\&quot;http:\/\/www.w3.org\/2000\/svg\&quot;&gt;&lt;path d=\&quot;M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z\&quot;&gt;&lt;\/path&gt;&lt;\/svg&gt;&quot;,&quot;library&quot;:&quot;fa-solid&quot;},&quot;full_width&quot;:&quot;stretch&quot;,&quot;layout&quot;:&quot;horizontal&quot;,&quot;toggle&quot;:&quot;burger&quot;}" data-widget_type="nav-menu.default">
+        <div class="elementor-widget-container">
+     
+            <div class="elementor-menu-toggle" role="button" tabindex="0" aria-label="Menu Toggle" aria-expanded="false">
+    <svg aria-hidden="true" role="presentation" class="elementor-menu-toggle__icon--open e-font-icon-svg e-eicon-menu-bar" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><path d="M104 333H896C929 333 958 304 958 271S929 208 896 208H104C71 208 42 237 42 271S71 333 104 333ZM104 583H896C929 583 958 554 958 521S929 458 896 458H104C71 458 42 487 42 521S71 583 104 583ZM104 833H896C929 833 958 804 958 771S929 708 896 708H104C71 708 42 737 42 771S71 833 104 833Z"></path></svg><svg aria-hidden="true" role="presentation" class="elementor-menu-toggle__icon--close e-font-icon-svg e-eicon-close" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><path d="M742 167L500 408 258 167C246 154 233 150 217 150 196 150 179 158 167 167 154 179 150 196 150 212 150 229 154 242 171 254L408 500 167 742C138 771 138 800 167 829 196 858 225 858 254 829L496 587 738 829C750 842 767 846 783 846 800 846 817 842 829 829 842 817 846 804 846 783 846 767 842 750 829 737L588 500 833 258C863 229 863 200 833 171 804 137 775 137 742 167Z"></path></svg>			<span class="elementor-screen-only">Menu</span>
+</div>
+            <nav class="elementor-nav-menu--dropdown elementor-nav-menu__container" aria-hidden="true">
+        <ul id="menu-2-ddef0c1" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-7603"><a href="https://www.adesoyecollege.org" onClick="return true" class="elementor-item" tabindex="-1">HOME</a></li>
+            <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4311"><a title="About Us" href="#" onClick="return true" class="elementor-item elementor-item-anchor">ABOUT US</a>
+                <ul class="sub-menu elementor-nav-menu--dropdown">
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4148"><a href="" onClick="return true" class="elementor-sub-item">Vision &#038; Mission</a></li>
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3948"><a href="" onClick="return true" class="elementor-sub-item">Meet The Founder</a></li>
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4699"><a href="" onClick="return true" class="elementor-sub-item">Our Anthem</a></li>
+                </ul>
+                </li>
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-3918"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">ADMISSION</a>
+                <ul class="sub-menu elementor-nav-menu--dropdown">
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3962"><a href="#" onClick="return true" class="elementor-sub-item">Nur/Pry</a></li>
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4082"><a href="#" onClick="return true" class="elementor-sub-item">Secondary</a></li>
+                
+                </ul>
+                </li>
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-10887"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">Portal</a>
+                <ul class="sub-menu elementor-nav-menu--dropdown">
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10633"><a href="" onClick="return true" class="elementor-sub-item">Staff</a></li>
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10888"><a href="" onClick="return true" class="elementor-sub-item">student</a></li>
+                </ul>
+                </li>
+                
+                
+                </li>
+                <li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4147"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">STUDENT LIFE</a>
+                <ul class="sub-menu elementor-nav-menu--dropdown">
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3961"><a href="#" onClick="return true" class="elementor-sub-item">Code of Conduct</a></li>
+                </ul>
+                </li>
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10046"><a href="#" onClick="return true" class="elementor-item">GALLERY</a></li>
+                
+                <li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4055"><a href="#" onClick="return true" class="elementor-item">CONTACT US</a></li>
+
+
+        </ul>
+</nav>
+</div>
+</div>
+            </div>
+</div>
+            </div>
+</main>
+        <section  class="elementor-section elementor-top-section elementor-element elementor-element-78c489da elementor-section-full_width elementor-section-stretched elementor-hidden-mobile elementor-section-height-default elementor-section-height-default" data-id="78c489da" data-element_type="section" data-settings="{&quot;stretch_section&quot;:&quot;section-stretched&quot;,&quot;background_background&quot;:&quot;classic&quot;,&quot;sticky&quot;:&quot;top&quot;,&quot;sticky_on&quot;:[&quot;desktop&quot;,&quot;tablet&quot;,&quot;mobile&quot;],&quot;sticky_offset&quot;:0,&quot;sticky_effects_offset&quot;:0}">
+                <div class="elementor-container elementor-column-gap-default" style="background-color: white;">
+            <div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-56555d43" data-id="56555d43" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated" style="background-color: white;">
+                <div class="elementor-element elementor-element-566c2068 elementor-widget__width-initial elementor-widget-tablet__width-initial elementor-widget elementor-widget-theme-site-logo elementor-widget-image" data-id="566c2068" data-element_type="widget" data-widget_type="theme-site-logo.default">
+        <div class="elementor-widget-container" style="background-color: white;">
+                            <a href="{ 'home' }">
+    <img src="{{logo.img.url}}" title="ACO-Logo-N" alt="ACO-Logo-N" loading="lazy" />				</a>
+                            </div>
+        </div>
+            </div>
+</div>
+        <div class="elementor-column elementor-col-50 elementor-top-column elementor-element elementor-element-321b0ff7" data-id="321b0ff7" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated" style="background-color: white;">
+                <div class="elementor-element elementor-element-3242f77 elementor-nav-menu__align-justify elementor-nav-menu--dropdown-none elementor-widget elementor-widget-nav-menu" data-id="3242f77" data-element_type="widget" data-settings="{&quot;sticky&quot;:&quot;top&quot;,&quot;layout&quot;:&quot;horizontal&quot;,&quot;submenu_icon&quot;:{&quot;value&quot;:&quot;&lt;svg class=\&quot;e-font-icon-svg e-fas-caret-down\&quot; viewBox=\&quot;0 0 320 512\&quot; xmlns=\&quot;http:\/\/www.w3.org\/2000\/svg\&quot;&gt;&lt;path d=\&quot;M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z\&quot;&gt;&lt;\/path&gt;&lt;\/svg&gt;&quot;,&quot;library&quot;:&quot;fa-solid&quot;},&quot;sticky_on&quot;:[&quot;desktop&quot;,&quot;tablet&quot;,&quot;mobile&quot;],&quot;sticky_offset&quot;:0,&quot;sticky_effects_offset&quot;:0}" data-widget_type="nav-menu.default">
+        <div class="elementor-widget-container">
+                <nav style="background-color: white;" class="elementor-nav-menu--main elementor-nav-menu__container elementor-nav-menu--layout-horizontal e--pointer-underline e--animation-drop-in">
+        <ul id="menu-1-3242f77" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-7603"><a href="{{ 'home' }}" onClick="return true" class="elementor-item">HOME</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4311"><a title="About Us" href="#" onClick="return true" class="elementor-item elementor-item-anchor">ABOUT US</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4148"><a href="" onClick="return true" class="elementor-sub-item">Vision &#038; Mission</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3948"><a href="" onClick="return true" class="elementor-sub-item">Meet The Founder</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4699"><a href="" onClick="return true" class="elementor-sub-item">Our Anthem</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-3918"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">ADMISSION</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3962"><a href="#" onClick="return true" class="elementor-sub-item">Nur/Pry</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4082"><a href="#" onClick="return true" class="elementor-sub-item">Secondary</a></li>
+
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-10887"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">Portal</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10633"><a href="" onClick="return true" class="elementor-sub-item">Staff</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10888"><a href="" onClick="return true" class="elementor-sub-item">student</a></li>
+</ul>
+</li>
+
+
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4147"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor">STUDENT LIFE</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3961"><a href="#" onClick="return true" class="elementor-sub-item">Code of Conduct</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10046"><a href="#" onClick="return true" class="elementor-item">GALLERY</a></li>
+
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4055"><a href="#" onClick="return true" class="elementor-item">CONTACT US</a></li>
+</ul>			</nav>
+                <nav class="elementor-nav-menu--dropdown elementor-nav-menu__container" aria-hidden="true">
+        <!--ul id="menu-2-3242f77" class="elementor-nav-menu"><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-7603"><a href="https://www.adesoyecollege.org" onClick="return true" class="elementor-item" tabindex="-1">HOME</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4311"><a title="About Us" href="#" onClick="return true" class="elementor-item elementor-item-anchor" tabindex="-1">ABOUT US</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4148"><a href="https://adesoyecollege.org/?page_id=6722" onClick="return true" class="elementor-sub-item" tabindex="-1">Vision &#038; Mission</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3948"><a href="https://adesoyecollege.org/about-us/meet-the-founder/" onClick="return true" class="elementor-sub-item" tabindex="-1">Meet The Founder</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-9646"><a href="https://adesoyecollege.org/about-us/leadership-team/" onClick="return true" class="elementor-sub-item" tabindex="-1">Leadership Team</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4699"><a href="https://adesoyecollege.org/about-us/anthem/" onClick="return true" class="elementor-sub-item" tabindex="-1">Our Anthem</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-3918"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor" tabindex="-1">ADMISSION</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3962"><a href="https://adesoyecollege.org/admission/admission-process/" onClick="return true" class="elementor-sub-item" tabindex="-1">Admission Process</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4082"><a href="https://www.adesoyecollege.org/applicationnew" onClick="return true" class="elementor-sub-item" tabindex="-1">Apply For Admission</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10411"><a href="https://adesoyecollege.org/brochure-request/" onClick="return true" class="elementor-sub-item" tabindex="-1">Brochure Request</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10383"><a href="https://adesoyecollege.org/payment/" onClick="return true" class="elementor-sub-item" tabindex="-1">Payments</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3975"><a href="https://adesoyecollege.org/admission/sample-questions/" onClick="return true" class="elementor-sub-item" tabindex="-1">Sample Questions</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-10887"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor" tabindex="-1">NUR/PRY</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-10633"><a href="https://adesoyecollege.org/ApplicationPrimarySchool/" onClick="return true" class="elementor-sub-item" tabindex="-1">Apply for Admission</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10888"><a href="https://adesoyecollege.org/curriculum-elementary/" onClick="return true" class="elementor-sub-item" tabindex="-1">Our Curriculum</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10889"><a href="https://adesoyecollege.org/extracurriculum-elementary/" onClick="return true" class="elementor-sub-item" tabindex="-1">Extra Curriculum Activities</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10890"><a href="https://adesoyecollege.org/gallery-pryschool/" onClick="return true" class="elementor-sub-item" tabindex="-1">Gallery</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4085"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor" tabindex="-1">COLLEGE</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3969"><a href="https://adesoyecollege.org/academic-structure/academic-probation/" onClick="return true" class="elementor-sub-item" tabindex="-1">Academic Probation</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3964"><a href="https://adesoyecollege.org/academic-structure/" onClick="return true" class="elementor-sub-item" tabindex="-1">Academic Structure</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6397"><a href="https://adesoyecollege.org/curriculum/" onClick="return true" class="elementor-sub-item" tabindex="-1">Curriculum</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10292"><a href="https://adesoyecollege.org/result-analysis/" onClick="return true" class="elementor-sub-item" tabindex="-1">Result Analysis</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-9642"><a href="https://adesoyecollege.org/scholarship/" onClick="return true" class="elementor-sub-item" tabindex="-1">Scholarship</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-4147"><a href="#" onClick="return true" class="elementor-item elementor-item-anchor" tabindex="-1">STUDENT LIFE</a>
+<ul class="sub-menu elementor-nav-menu--dropdown">
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4178"><a href="https://adesoyecollege.org/boarding/" onClick="return true" class="elementor-sub-item" tabindex="-1">Boarding</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3961"><a href="https://adesoyecollege.org/code-of-conduct/" onClick="return true" class="elementor-sub-item" tabindex="-1">Code of Conduct</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-9525"><a href="https://adesoyecollege.org/dukeofedinburgh/" onClick="return true" class="elementor-sub-item" tabindex="-1">Duke of Edinburgh</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4179"><a href="https://adesoyecollege.org/health-medicine/" onClick="return true" class="elementor-sub-item" tabindex="-1">Health &#038; Medicine</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-10046"><a href="https://adesoyecollege.org/our-gallery/" onClick="return true" class="elementor-item" tabindex="-1">GALLERY</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-8494"><a href="https://adesoyecollege.org/?page_id=8465" onClick="return true" class="elementor-item" tabindex="-1">ALUMNI</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4055"><a href="https://adesoyecollege.org/contact-us/" onClick="return true" class="elementor-item" tabindex="-1">CONTACT US</a></li>
+</ul-->			</nav>
+        </div>
+        </div>
+            </div>
+</div>
+            </div>
+</section>
+        </div>
+             
+
+
+            {% block content %}
+
+            
+            {% endblock %}
+
+        </section> <!--/#main-->
+        <div data-elementor-type="footer" data-elementor-id="6544" class="elementor elementor-6544 elementor-location-footer" data-elementor-post-type="elementor_library">
+                    <section class="elementor-section elementor-top-section elementor-element elementor-element-5f2b885a elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="5f2b885a" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+                        <div class="elementor-container elementor-column-gap-default">
+                    <div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-1d3856fe" data-id="1d3856fe" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-25c78fea elementor-widget elementor-widget-heading" data-id="25c78fea" data-element_type="widget" data-widget_type="heading.default">
+                <div class="elementor-widget-container">
+            <h3 class="elementor-heading-title elementor-size-default">Contatc us on +234 814 575 7578</h3>		</div>
+                </div>
+                    </div>
+        </div>
+                    </div>
+        </section>
+                <section class="elementor-section elementor-top-section elementor-element elementor-element-308a654d elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="308a654d" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+                        <div class="elementor-container elementor-column-gap-no">
+                    <div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-e311fa0" data-id="e311fa0" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <section class="elementor-section elementor-inner-section elementor-element elementor-element-247614b6 elementor-section-content-top elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="247614b6" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;,&quot;shape_divider_top&quot;:&quot;arrow&quot;}">
+                    <div class="elementor-shape elementor-shape-top" data-negative="false">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 10" preserveAspectRatio="none">
+        <path class="elementor-shape-fill" d="M350,10L340,0h20L350,10z"/>
+        </svg>		</div>
+                    <div class="elementor-container elementor-column-gap-no">
+                    <div class="elementor-column elementor-col-25 elementor-inner-column elementor-element elementor-element-3d7b7545" data-id="3d7b7545" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-775c07fc elementor-widget elementor-widget-theme-site-logo elementor-widget-image" data-id="775c07fc" data-element_type="widget" data-widget_type="theme-site-logo.default">
+                <div class="elementor-widget-container">
+                                    <a href="https://adesoyecollege.org">
+            <img width="924" height="835" src="{{logo.img2.url}}" class="attachment-full size-full wp-image-5257" alt=""  sizes="(max-width: 924px) 100vw, 924px" />				</a>
+                                    </div>
+                </div>
+                <div class="elementor-element elementor-element-efe5aa7 elementor-widget elementor-widget-text-editor" data-id="efe5aa7" data-element_type="widget" data-widget_type="text-editor.default">
+                <div class="elementor-widget-container">
+                            <p>{{logo.address}} </p>						</div>
+                </div>
+                    </div>
+        </div>
+                <div class="elementor-column elementor-col-25 elementor-inner-column elementor-element elementor-element-3689f5fb" data-id="3689f5fb" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-772d1d1e elementor-widget elementor-widget-heading" data-id="772d1d1e" data-element_type="widget" data-widget_type="heading.default">
+                <div class="elementor-widget-container">
+            <h4 class="elementor-heading-title elementor-size-default">Working Days</h4>		</div>
+                </div>
+                <div class="elementor-element elementor-element-68e91996 elementor-align-left elementor-icon-list--layout-traditional elementor-list-item-link-full_width elementor-widget elementor-widget-icon-list" data-id="68e91996" data-element_type="widget" data-widget_type="icon-list.default">
+                <div class="elementor-widget-container">
+                    <ul class="elementor-icon-list-items">
+                            <li class="elementor-icon-list-item">
+                                        <span class="elementor-icon-list-text">{{logo.working_days}}</span>
+                                    </li>
+                                
+                        </ul>
+                </div>
+                </div>
+                    </div>
+        </div>
+                <div class="elementor-column elementor-col-25 elementor-inner-column elementor-element elementor-element-45557957" data-id="45557957" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-5e849a1c elementor-widget elementor-widget-heading" data-id="5e849a1c" data-element_type="widget" data-widget_type="heading.default">
+                <div class="elementor-widget-container">
+            <h4 class="elementor-heading-title elementor-size-default">Working Hours</h4>		</div>
+            <div class="elementor-element elementor-element-68e91996 elementor-align-left elementor-icon-list--layout-traditional elementor-list-item-link-full_width elementor-widget elementor-widget-icon-list" data-id="68e91996" data-element_type="widget" data-widget_type="icon-list.default">
+                <div class="elementor-widget-container">
+                    <ul class="elementor-icon-list-items">
+                            <li class="elementor-icon-list-item">
+                                        <span class="elementor-icon-list-text">{{logo.working_hours}}</span>
+                                    </li>
+                                
+                        </ul>
+                </div>
+                </div>
+                </div>
+                    </div>
+        </div>
+                <div class="elementor-column elementor-col-25 elementor-inner-column elementor-element elementor-element-4d36edbe" data-id="4d36edbe" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-540ffe47 elementor-widget-mobile__width-initial elementor-widget elementor-widget-heading" data-id="540ffe47" data-element_type="widget" data-widget_type="heading.default">
+                <div class="elementor-widget-container">
+            <h4 class="elementor-heading-title elementor-size-default">Connect With Us</h4>		</div>
+                </div>
+                <div class="elementor-element elementor-element-56f9b03 elementor-shape-circle e-grid-align-left elementor-widget-mobile__width-initial elementor-grid-0 elementor-widget elementor-widget-social-icons" data-id="56f9b03" data-element_type="widget" data-widget_type="social-icons.default">
+                <div class="elementor-widget-container">
+                    <div class="elementor-social-icons-wrapper elementor-grid">
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-facebook elementor-animation-push elementor-repeater-item-95a38ac" 
+                    href="{{logo.facebook}}" target="_blank">
+                        <span class="elementor-screen-only">Facebook</span>
+                        <svg class="e-font-icon-svg e-fab-facebook" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14 0 55.52 4.84 55.52 4.84v61h-31.28c-30.8 0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z"></path></svg>					</a>
+                </span>
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-youtube elementor-animation-push elementor-repeater-item-a53c762" 
+                    href="{{loago.youtube}}" target="_blank">
+                        <span class="elementor-screen-only">Youtube</span>
+                        <svg class="e-font-icon-svg e-fab-youtube" viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"></path></svg>					</a>
+                </span>
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-instagram elementor-animation-push elementor-repeater-item-c41a3a2" 
+                    href="{{logo.instagram}}" target="_blank">
+                        <span class="elementor-screen-only">Instagram</span>
+                        <svg class="e-font-icon-svg e-fab-instagram" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>					</a>
+                </span>
+                    </div>
+                </div>
+                </div>
+                <!--div class="elementor-element elementor-element-62c0ecd5 elementor-align-left elementor-icon-list--layout-traditional elementor-list-item-link-full_width elementor-widget elementor-widget-icon-list" data-id="62c0ecd5" data-element_type="widget" data-widget_type="icon-list.default">
+                <div class="elementor-widget-container">
+                    <ul class="elementor-icon-list-items">
+                            <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollege.org/schooladmin/students/">
+        
+                                            <span class="elementor-icon-list-text">Check Result</span>
+                                            </a>
+                                    </li>
+                                <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollege.org/applicationnew">
+        
+                                            <span class="elementor-icon-list-text">Application Form</span>
+                                            </a>
+                                    </li>
+                                <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollegelms.org/">
+        
+                                            <span class="elementor-icon-list-text">E-Learning</span>
+                                            </a>
+                                    </li>
+                                <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollege.org/wp-content/uploads/2021/11/November-2021-Newsletter-1.pdf" target="_blank">
+        
+                                            <span class="elementor-icon-list-text">Newsletter</span>
+                                            </a>
+                                    </li>
+                                <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollege.org/Schoolprofile.pdf">
+        
+                                            <span class="elementor-icon-list-text">School Profile <gwmw style="display:none;"></gwmw></span>
+                                            </a>
+                                    </li>
+                                <li class="elementor-icon-list-item">
+                                            <a href="https://adesoyecollege.org/wp-content/uploads/2024/04/3rd-Term-Calendar-2024.pdf" target="_blank">
+        
+                                                <span class="elementor-icon-list-icon">
+                            <svg aria-hidden="true" class="e-font-icon-svg e-fas-check" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"></path></svg>						</span>
+                                        <span class="elementor-icon-list-text">Calendar<gwmw style="display:none;"></gwmw><gwmw style="display:none;"></gwmw><gwmw style="display:none;"></gwmw><gwmw style="display:none;"></gwmw></span>
+                                            </a>
+                                    </li>
+                        </ul>
+                </div>
+                </div>
+                    </div>
+        </div-->
+                    </div>
+        </section>
+                    </div>
+        </div>
+                    </div>
+        </section>
+                <footer class="elementor-section elementor-top-section elementor-element elementor-element-61fa8243 elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="61fa8243" data-element_type="section" data-settings="{&quot;background_background&quot;:&quot;classic&quot;}">
+                        <div class="elementor-container elementor-column-gap-no">
+                    <div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-1ab7b564" data-id="1ab7b564" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-18ee8104 elementor-widget-divider--view-line elementor-widget elementor-widget-divider" data-id="18ee8104" data-element_type="widget" data-widget_type="divider.default">
+                <div class="elementor-widget-container">
+                    <div class="elementor-divider">
+            <span class="elementor-divider-separator">
+                        </span>
+        </div>
+                </div>
+                </div>
+                <section class="elementor-section elementor-inner-section elementor-element elementor-element-6aa01bc elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="6aa01bc" data-element_type="section">
+                        <div class="elementor-container elementor-column-gap-default">
+                    <div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-27cbb110" data-id="27cbb110" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-44368e8e elementor-widget elementor-widget-heading" data-id="44368e8e" data-element_type="widget" data-widget_type="heading.default">
+                <div class="elementor-widget-container">
+            <p class="elementor-heading-title elementor-size-default" style="color: white;">© 2024 {{logo.school_name}} All rights reserved<gwmw style="display:none;"></gwmw><gwmw style="display:none;"></gwmw></p>		</div>
+                </div>
+                    </div>
+        </div>
+                <div class="elementor-column elementor-col-50 elementor-inner-column elementor-element elementor-element-64997c02" data-id="64997c02" data-element_type="column">
+            <div class="elementor-widget-wrap elementor-element-populated">
+                        <div class="elementor-element elementor-element-57e8da96 e-grid-align-right e-grid-align-mobile-center elementor-shape-rounded elementor-grid-0 elementor-widget elementor-widget-social-icons" data-id="57e8da96" data-element_type="widget" data-widget_type="social-icons.default">
+                <div class="elementor-widget-container">
+                    <div class="elementor-social-icons-wrapper elementor-grid">
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-facebook-f elementor-repeater-item-0267196" href="{{logo.facebook}}" target="_blank">
+                        <span class="elementor-screen-only">Facebook-f</span>
+                        <svg class="e-font-icon-svg e-fab-facebook-f" viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"></path></svg>					</a>
+                </span>
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-youtube elementor-repeater-item-dbaeb71" href="{{logo.youtube}}" target="_blank">
+                        <span class="elementor-screen-only">Youtube</span>
+                        <svg class="e-font-icon-svg e-fab-youtube" viewBox="0 0 576 512" xmlns="http://www.w3.org/2000/svg"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"></path></svg>					</a>
+                </span>
+                            <span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-instagram elementor-repeater-item-e636125" href="{{logo.instagram}}" target="_blank">
+                        <span class="elementor-screen-only">Instagram</span>
+                        <svg class="e-font-icon-svg e-fab-instagram" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>					</a>
+                </span>
+                            <!--span class="elementor-grid-item">
+                    <a class="elementor-icon elementor-social-icon elementor-social-icon-linkedin elementor-repeater-item-46e4d70" href="http://www.linkedln.com/adesoyecollegeoffa" target="_blank">
+                        <span class="elementor-screen-only">Linkedin</span>
+                        <svg class="e-font-icon-svg e-fab-linkedin" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"></path></svg>					</a>
+                </span-->
+                    </div>
+                </div>
+                </div>
+                    </div>
+        </div>
+                    </div>
+        </section>
+                    </div>
+        </div>
+                    </div>
+        </footer>
+                </div>
+        
+               
+
+                
+        </body>
+
+
+
+
+
+        <link rel='stylesheet' id='font-awesome-5-all-css' href='https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/font-awesome/css/all.min.css?ver=5.8.9' type='text/css' media='all' />
+<link rel='stylesheet' id='font-awesome-4-shim-css' href='https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/font-awesome/css/v4-shims.min.css?ver=5.8.9' type='text/css' media='all' />
+<style id='core-block-supports-inline-css' type='text/css'>
+/**
+ * Core styles: block-supports
+ */
+
+</style>
+<link rel='stylesheet' id='e-animations-css' href='https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/animations/animations.min.css?ver=3.21.8' type='text/css' media='all' />
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/contact-form-7/includes/swv/js/index.js?ver=5.9.3" id="swv-js"></script>
+<script type="text/javascript" id="contact-form-7-js-extra">
+/* <![CDATA[ */
+var wpcf7 = {"api":{"root":"https:\/\/adesoyecollege.org\/wp-json\/","namespace":"contact-form-7\/v1"}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/contact-form-7/includes/js/index.js?ver=5.9.3" id="contact-form-7-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/vendor/wp-polyfill-inert.js?ver=3.1.2" id="wp-polyfill-inert-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/vendor/regenerator-runtime.js?ver=0.14.0" id="regenerator-runtime-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/vendor/wp-polyfill.js?ver=3.15.0" id="wp-polyfill-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/hooks.js?ver=2e6d63e772894a800ba8" id="wp-hooks-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/i18n.js?ver=2aff907006e2aa00e26e" id="wp-i18n-js"></script>
+<script type="text/javascript" id="wp-i18n-js-after">
+/* <![CDATA[ */
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+/* ]]> */
+</script>
+<script type="text/javascript" id="tutor-script-js-extra">
+/* <![CDATA[ */
+var _tutorobject = {"ajaxurl":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","home_url":"https:\/\/adesoyecollege.org","site_title":"Adesoye College Offa","base_path":"\/","tutor_url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/","tutor_pro_url":null,"nonce_key":"_tutor_nonce","_tutor_nonce":"c7aeb0b26d","loading_icon_url":"https:\/\/adesoyecollege.org\/wp-admin\/images\/wpspin_light.gif","placeholder_img_src":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/images\/placeholder.svg","enable_lesson_classic_editor":"","tutor_frontend_dashboard_url":"https:\/\/adesoyecollege.org\/dashboard\/","wp_date_format":"MMMM d, yyyy","is_admin":"","is_admin_bar_showing":"","addons_data":[{"name":"Course Bundle","description":"Group multiple courses to sell together.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/course-bundle\/thumbnail.svg"},{"name":"Social Login","description":"Let users register & login through social network like Facebook, Google, etc.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/social-login\/thumbnail.svg"},{"name":"Content Drip","description":"Unlock lessons by schedule or when the student meets specific condition.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/content-drip\/thumbnail.png"},{"name":"Tutor Multi Instructors","description":"Start a course with multiple instructors by Tutor Multi Instructors","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-multi-instructors\/thumbnail.png"},{"name":"Tutor Assignments","description":"Tutor assignments is a great way to assign tasks to students.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-assignments\/thumbnail.png"},{"name":"Tutor Course Preview","description":"Unlock some lessons for students before enrollment.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-course-preview\/thumbnail.png"},{"name":"Tutor Course Attachments","description":"Add unlimited attachments\/ private files to any Tutor course","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-course-attachments\/thumbnail.png"},{"name":"Tutor Google Meet Integration","description":"Connect Tutor LMS with Google Meet to host live online classes. Students can attend live classes right from the lesson page.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/google-meet\/thumbnail.png"},{"name":"Tutor Report","description":"Check your course performance through Tutor Report stats.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-report\/thumbnail.png"},{"name":"Tutor E-Mail","description":"Send email on various tutor events","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-email\/thumbnail.png"},{"name":"Calendar","description":"Allow students to see everything in a calendar view in the front dashboard.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/calendar\/thumbnail.png"},{"name":"Notifications","description":"Get On Site and Push Notifications on specified tutor events.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-notifications\/thumbnail.png"},{"name":"Google Classroom Integration","description":"Helps connect Google Classrooms with Tutor LMS courses, allowing you to use features like Classroom streams and files directly from the Tutor LMS course.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/google-classroom\/thumbnail.png"},{"name":"Tutor Zoom Integration","description":"Connect Tutor LMS with Zoom to host live online classes. Students can attend live classes right from the lesson page.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-zoom\/thumbnail.png"},{"name":"Quiz Export\/Import","description":"Save time by exporting\/importing quiz data with easy options.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/quiz-import-export\/thumbnail.png"},{"name":"Enrollment","description":"Take advanced control on enrollment. Enroll the student manually.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/enrollments\/thumbnail.png"},{"name":"Tutor Certificate","description":"Students will be able to download a certificate after course completion.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-certificate\/thumbnail.png"},{"name":"Gradebook","description":"Shows student progress from assignment and quiz","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/gradebook\/thumbnail.png"},{"name":"Tutor Prerequisites","description":"Specific course you must complete before you can enroll new course by Tutor Prerequisites","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-prerequisites\/thumbnail.png"},{"name":"BuddyPress","description":"Discuss about course and share your knowledge with your friends through BuddyPress","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/buddypress\/thumbnail.png"},{"name":"WooCommerce Subscriptions","description":"Capture Residual Revenue with Recurring Payments.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/wc-subscriptions\/thumbnail.png"},{"name":"Paid Memberships Pro","description":"Maximize revenue by selling membership access to all of your courses.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/pmpro\/thumbnail.png"},{"name":"Restrict Content Pro","description":"Unlock Course depending on Restrict Content Pro Plugin Permission.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/restrict-content-pro\/thumbnail.png"},{"name":"Weglot","description":"Translate & manage multilingual courses for global reach with full edit control.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-weglot\/thumbnail.png"},{"name":"WPML Multilingual CMS","description":"Create multilingual courses, lessons, dashboard and more for a global audience.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-wpml\/thumbnail.png"}],"current_user":{"data":{},"ID":0,"caps":[],"cap_key":null,"roles":[],"allcaps":[],"filter":null},"content_change_event":"tutor_content_changed_event","is_tutor_course_edit":"","assignment_max_file_allowed":"0","current_page":"","quiz_answer_display_time":"0","is_ssl":"1","course_list_page_url":"https:\/\/adesoyecollege.org\/wp-admin\/admin.php?page=tutor","course_post_type":"courses"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/tutor/assets/js/tutor.min.js?ver=2.4.0" id="tutor-script-js"></script>
+<script type="text/javascript" id="quicktags-js-extra">
+/* <![CDATA[ */
+var quicktagsL10n = {"closeAllOpenTags":"Close all open tags","closeTags":"close tags","enterURL":"Enter the URL","enterImageURL":"Enter the URL of the image","enterImageDescription":"Enter a description of the image","textdirection":"text direction","toggleTextdirection":"Toggle Editor Text Direction","dfw":"Distraction-free writing mode","strong":"Bold","strongClose":"Close bold tag","em":"Italic","emClose":"Close italic tag","link":"Insert link","blockquote":"Blockquote","blockquoteClose":"Close blockquote tag","del":"Deleted text (strikethrough)","delClose":"Close deleted text tag","ins":"Inserted text","insClose":"Close inserted text tag","image":"Insert image","ul":"Bulleted list","ulClose":"Close bulleted list tag","ol":"Numbered list","olClose":"Close numbered list tag","li":"List item","liClose":"Close list item tag","code":"Code","codeClose":"Close code tag","more":"Insert Read More tag"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/quicktags.js?ver=6.5.4" id="quicktags-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/ui/sortable.js?ver=1.13.2" id="jquery-ui-sortable-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/jquery/jquery.ui.touch-punch.js?ver=0.2.2" id="jquery-touch-punch-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/tutor/assets/packages/SocialShare/SocialShare.min.js?ver=2.4.0" id="tutor-social-share-js"></script>
+<script type="text/javascript" id="tutor-frontend-js-extra">
+/* <![CDATA[ */
+var _tutorobject = {"ajaxurl":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","home_url":"https:\/\/adesoyecollege.org","site_title":"Adesoye College Offa","base_path":"\/","tutor_url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/","tutor_pro_url":null,"nonce_key":"_tutor_nonce","_tutor_nonce":"c7aeb0b26d","loading_icon_url":"https:\/\/adesoyecollege.org\/wp-admin\/images\/wpspin_light.gif","placeholder_img_src":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/images\/placeholder.svg","enable_lesson_classic_editor":"","tutor_frontend_dashboard_url":"https:\/\/adesoyecollege.org\/dashboard\/","wp_date_format":"MMMM d, yyyy","is_admin":"","is_admin_bar_showing":"","addons_data":[{"name":"Course Bundle","description":"Group multiple courses to sell together.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/course-bundle\/thumbnail.svg"},{"name":"Social Login","description":"Let users register & login through social network like Facebook, Google, etc.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/social-login\/thumbnail.svg"},{"name":"Content Drip","description":"Unlock lessons by schedule or when the student meets specific condition.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/content-drip\/thumbnail.png"},{"name":"Tutor Multi Instructors","description":"Start a course with multiple instructors by Tutor Multi Instructors","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-multi-instructors\/thumbnail.png"},{"name":"Tutor Assignments","description":"Tutor assignments is a great way to assign tasks to students.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-assignments\/thumbnail.png"},{"name":"Tutor Course Preview","description":"Unlock some lessons for students before enrollment.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-course-preview\/thumbnail.png"},{"name":"Tutor Course Attachments","description":"Add unlimited attachments\/ private files to any Tutor course","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-course-attachments\/thumbnail.png"},{"name":"Tutor Google Meet Integration","description":"Connect Tutor LMS with Google Meet to host live online classes. Students can attend live classes right from the lesson page.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/google-meet\/thumbnail.png"},{"name":"Tutor Report","description":"Check your course performance through Tutor Report stats.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-report\/thumbnail.png"},{"name":"Tutor E-Mail","description":"Send email on various tutor events","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-email\/thumbnail.png"},{"name":"Calendar","description":"Allow students to see everything in a calendar view in the front dashboard.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/calendar\/thumbnail.png"},{"name":"Notifications","description":"Get On Site and Push Notifications on specified tutor events.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-notifications\/thumbnail.png"},{"name":"Google Classroom Integration","description":"Helps connect Google Classrooms with Tutor LMS courses, allowing you to use features like Classroom streams and files directly from the Tutor LMS course.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/google-classroom\/thumbnail.png"},{"name":"Tutor Zoom Integration","description":"Connect Tutor LMS with Zoom to host live online classes. Students can attend live classes right from the lesson page.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-zoom\/thumbnail.png"},{"name":"Quiz Export\/Import","description":"Save time by exporting\/importing quiz data with easy options.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/quiz-import-export\/thumbnail.png"},{"name":"Enrollment","description":"Take advanced control on enrollment. Enroll the student manually.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/enrollments\/thumbnail.png"},{"name":"Tutor Certificate","description":"Students will be able to download a certificate after course completion.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-certificate\/thumbnail.png"},{"name":"Gradebook","description":"Shows student progress from assignment and quiz","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/gradebook\/thumbnail.png"},{"name":"Tutor Prerequisites","description":"Specific course you must complete before you can enroll new course by Tutor Prerequisites","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-prerequisites\/thumbnail.png"},{"name":"BuddyPress","description":"Discuss about course and share your knowledge with your friends through BuddyPress","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/buddypress\/thumbnail.png"},{"name":"WooCommerce Subscriptions","description":"Capture Residual Revenue with Recurring Payments.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/wc-subscriptions\/thumbnail.png"},{"name":"Paid Memberships Pro","description":"Maximize revenue by selling membership access to all of your courses.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/pmpro\/thumbnail.png"},{"name":"Restrict Content Pro","description":"Unlock Course depending on Restrict Content Pro Plugin Permission.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/restrict-content-pro\/thumbnail.png"},{"name":"Weglot","description":"Translate & manage multilingual courses for global reach with full edit control.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-weglot\/thumbnail.png"},{"name":"WPML Multilingual CMS","description":"Create multilingual courses, lessons, dashboard and more for a global audience.","url":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/tutor\/assets\/addons\/tutor-wpml\/thumbnail.png"}],"current_user":{"data":{},"ID":0,"caps":[],"cap_key":null,"roles":[],"allcaps":[],"filter":null},"content_change_event":"tutor_content_changed_event","is_tutor_course_edit":"","assignment_max_file_allowed":"0","current_page":"","quiz_answer_display_time":"0","is_ssl":"1","course_list_page_url":"https:\/\/adesoyecollege.org\/wp-admin\/admin.php?page=tutor","course_post_type":"courses"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/tutor/assets/js/tutor-front.min.js?ver=2.4.0" id="tutor-frontend-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/underscore.min.js?ver=1.13.4" id="underscore-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/shortcode.js?ver=6.5.4" id="shortcode-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/backbone.min.js?ver=1.5.0" id="backbone-js"></script>
+<script type="text/javascript" id="wp-util-js-extra">
+/* <![CDATA[ */
+var _wpUtilSettings = {"ajax":{"url":"\/wp-admin\/admin-ajax.php"}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/wp-util.js?ver=6.5.4" id="wp-util-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/wp-backbone.js?ver=6.5.4" id="wp-backbone-js"></script>
+<script type="text/javascript" id="media-models-js-extra">
+/* <![CDATA[ */
+var _wpMediaModelsL10n = {"settings":{"ajaxurl":"\/wp-admin\/admin-ajax.php","post":{"id":0}}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/media-models.js?ver=6.5.4" id="media-models-js"></script>
+<script type="text/javascript" id="wp-plupload-js-extra">
+/* <![CDATA[ */
+var pluploadL10n = {"queue_limit_exceeded":"You have attempted to queue too many files.","file_exceeds_size_limit":"%s exceeds the maximum upload size for this site.","zero_byte_file":"This file is empty. Please try another.","invalid_filetype":"Sorry, you are not allowed to upload this file type.","not_an_image":"This file is not an image. Please try another.","image_memory_exceeded":"Memory exceeded. Please try another smaller file.","image_dimensions_exceeded":"This is larger than the maximum size. Please try another.","default_error":"An error occurred in the upload. Please try again later.","missing_upload_url":"There was a configuration error. Please contact the server administrator.","upload_limit_exceeded":"You may only upload 1 file.","http_error":"Unexpected response from the server. The file may have been uploaded successfully. Check in the Media Library or reload the page.","http_error_image":"The server cannot process the image. This can happen if the server is busy or does not have enough resources to complete the task. Uploading a smaller image may help. Suggested maximum size is 2560 pixels.","upload_failed":"Upload failed.","big_upload_failed":"Please try uploading this file with the %1$sbrowser uploader%2$s.","big_upload_queued":"%s exceeds the maximum upload size for the multi-file uploader when used in your browser.","io_error":"IO error.","security_error":"Security error.","file_cancelled":"File canceled.","upload_stopped":"Upload stopped.","dismiss":"Dismiss","crunching":"Crunching\u2026","deleted":"moved to the Trash.","error_uploading":"\u201c%s\u201d has failed to upload.","unsupported_image":"This image cannot be displayed in a web browser. For best results convert it to JPEG before uploading.","noneditable_image":"This image cannot be processed by the web server. Convert it to JPEG or PNG before uploading.","file_url_copied":"The file URL has been copied to your clipboard"};
+var _wpPluploadSettings = {"defaults":{"file_data_name":"async-upload","url":"\/wp-admin\/async-upload.php","filters":{"max_file_size":"134217728b","mime_types":[{"extensions":"jpg,jpeg,jpe,gif,png,bmp,tiff,tif,webp,avif,ico,heic,asf,asx,wmv,wmx,wm,avi,divx,flv,mov,qt,mpeg,mpg,mpe,mp4,m4v,ogv,webm,mkv,3gp,3gpp,3g2,3gp2,txt,asc,c,cc,h,srt,csv,tsv,ics,rtx,css,vtt,dfxp,mp3,m4a,m4b,aac,ra,ram,wav,ogg,oga,flac,mid,midi,wma,wax,mka,rtf,pdf,class,tar,zip,gz,gzip,rar,7z,psd,xcf,doc,pot,pps,ppt,wri,xla,xls,xlt,xlw,mdb,mpp,docx,docm,dotx,dotm,xlsx,xlsm,xlsb,xltx,xltm,xlam,pptx,pptm,ppsx,ppsm,potx,potm,ppam,sldx,sldm,onetoc,onetoc2,onetmp,onepkg,oxps,xps,odt,odp,ods,odg,odc,odb,odf,wp,wpd,key,numbers,pages,heif"}]},"heic_upload_error":true,"multipart_params":{"action":"upload-attachment","_wpnonce":"6dc4bf3466"}},"browser":{"mobile":false,"supported":true},"limitExceeded":false};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/plupload/wp-plupload.js?ver=6.5.4" id="wp-plupload-js"></script>
+<script type="text/javascript" id="mediaelement-core-js-before">
+/* <![CDATA[ */
+var mejsL10n = {"language":"en","strings":{"mejs.download-file":"Download File","mejs.install-flash":"You are using a browser that does not have Flash player enabled or installed. Please turn on your Flash player plugin or download the latest version from https:\/\/get.adobe.com\/flashplayer\/","mejs.fullscreen":"Fullscreen","mejs.play":"Play","mejs.pause":"Pause","mejs.time-slider":"Time Slider","mejs.time-help-text":"Use Left\/Right Arrow keys to advance one second, Up\/Down arrows to advance ten seconds.","mejs.live-broadcast":"Live Broadcast","mejs.volume-help-text":"Use Up\/Down Arrow keys to increase or decrease volume.","mejs.unmute":"Unmute","mejs.mute":"Mute","mejs.volume-slider":"Volume Slider","mejs.video-player":"Video Player","mejs.audio-player":"Audio Player","mejs.captions-subtitles":"Captions\/Subtitles","mejs.captions-chapters":"Chapters","mejs.none":"None","mejs.afrikaans":"Afrikaans","mejs.albanian":"Albanian","mejs.arabic":"Arabic","mejs.belarusian":"Belarusian","mejs.bulgarian":"Bulgarian","mejs.catalan":"Catalan","mejs.chinese":"Chinese","mejs.chinese-simplified":"Chinese (Simplified)","mejs.chinese-traditional":"Chinese (Traditional)","mejs.croatian":"Croatian","mejs.czech":"Czech","mejs.danish":"Danish","mejs.dutch":"Dutch","mejs.english":"English","mejs.estonian":"Estonian","mejs.filipino":"Filipino","mejs.finnish":"Finnish","mejs.french":"French","mejs.galician":"Galician","mejs.german":"German","mejs.greek":"Greek","mejs.haitian-creole":"Haitian Creole","mejs.hebrew":"Hebrew","mejs.hindi":"Hindi","mejs.hungarian":"Hungarian","mejs.icelandic":"Icelandic","mejs.indonesian":"Indonesian","mejs.irish":"Irish","mejs.italian":"Italian","mejs.japanese":"Japanese","mejs.korean":"Korean","mejs.latvian":"Latvian","mejs.lithuanian":"Lithuanian","mejs.macedonian":"Macedonian","mejs.malay":"Malay","mejs.maltese":"Maltese","mejs.norwegian":"Norwegian","mejs.persian":"Persian","mejs.polish":"Polish","mejs.portuguese":"Portuguese","mejs.romanian":"Romanian","mejs.russian":"Russian","mejs.serbian":"Serbian","mejs.slovak":"Slovak","mejs.slovenian":"Slovenian","mejs.spanish":"Spanish","mejs.swahili":"Swahili","mejs.swedish":"Swedish","mejs.tagalog":"Tagalog","mejs.thai":"Thai","mejs.turkish":"Turkish","mejs.ukrainian":"Ukrainian","mejs.vietnamese":"Vietnamese","mejs.welsh":"Welsh","mejs.yiddish":"Yiddish"}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/mediaelement/mediaelement-and-player.js?ver=4.2.17" id="mediaelement-core-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/mediaelement/mediaelement-migrate.js?ver=6.5.4" id="mediaelement-migrate-js"></script>
+<script type="text/javascript" id="mediaelement-js-extra">
+/* <![CDATA[ */
+var _wpmejsSettings = {"pluginPath":"\/wp-includes\/js\/mediaelement\/","classPrefix":"mejs-","stretching":"responsive","audioShortcodeLibrary":"mediaelement","videoShortcodeLibrary":"mediaelement"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/mediaelement/wp-mediaelement.js?ver=6.5.4" id="wp-mediaelement-js"></script>
+<script type="text/javascript" id="wp-api-request-js-extra">
+/* <![CDATA[ */
+var wpApiSettings = {"root":"https:\/\/adesoyecollege.org\/wp-json\/","nonce":"206bb7f61e","versionString":"wp\/v2\/"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/api-request.js?ver=6.5.4" id="wp-api-request-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/dom-ready.js?ver=5b9fa8df0892dc9a7c41" id="wp-dom-ready-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/dist/a11y.js?ver=e4f0f9508f80ce638f3d" id="wp-a11y-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/clipboard.js?ver=2.0.11" id="clipboard-js"></script>
+<script type="text/javascript" id="media-views-js-extra">
+/* <![CDATA[ */
+var _wpMediaViewsL10n = {"mediaFrameDefaultTitle":"Media","url":"URL","addMedia":"Add media","search":"Search","select":"Select","cancel":"Cancel","update":"Update","replace":"Replace","remove":"Remove","back":"Back","selected":"%d selected","dragInfo":"Drag and drop to reorder media files.","uploadFilesTitle":"Upload files","uploadImagesTitle":"Upload images","mediaLibraryTitle":"Media Library","insertMediaTitle":"Add media","createNewGallery":"Create a new gallery","createNewPlaylist":"Create a new playlist","createNewVideoPlaylist":"Create a new video playlist","returnToLibrary":"\u2190 Go to library","allMediaItems":"All media items","allDates":"All dates","noItemsFound":"No items found.","insertIntoPost":"Insert into post","unattached":"Unattached","mine":"Mine","trash":"Trash","uploadedToThisPost":"Uploaded to this post","warnDelete":"You are about to permanently delete this item from your site.\nThis action cannot be undone.\n 'Cancel' to stop, 'OK' to delete.","warnBulkDelete":"You are about to permanently delete these items from your site.\nThis action cannot be undone.\n 'Cancel' to stop, 'OK' to delete.","warnBulkTrash":"You are about to trash these items.\n  'Cancel' to stop, 'OK' to delete.","bulkSelect":"Bulk select","trashSelected":"Move to Trash","restoreSelected":"Restore from Trash","deletePermanently":"Delete permanently","errorDeleting":"Error in deleting the attachment.","apply":"Apply","filterByDate":"Filter by date","filterByType":"Filter by type","searchLabel":"Search","searchMediaLabel":"Search media","searchMediaPlaceholder":"Search media items...","mediaFound":"Number of media items found: %d","noMedia":"No media items found.","noMediaTryNewSearch":"No media items found. Try a different search.","attachmentDetails":"Attachment details","insertFromUrlTitle":"Insert from URL","setFeaturedImageTitle":"Featured image","setFeaturedImage":"Set featured image","createGalleryTitle":"Create gallery","editGalleryTitle":"Edit gallery","cancelGalleryTitle":"\u2190 Cancel gallery","insertGallery":"Insert gallery","updateGallery":"Update gallery","addToGallery":"Add to gallery","addToGalleryTitle":"Add to gallery","reverseOrder":"Reverse order","imageDetailsTitle":"Image details","imageReplaceTitle":"Replace image","imageDetailsCancel":"Cancel edit","editImage":"Edit image","chooseImage":"Choose image","selectAndCrop":"Select and crop","skipCropping":"Skip cropping","cropImage":"Crop image","cropYourImage":"Crop your image","cropping":"Cropping\u2026","suggestedDimensions":"Suggested image dimensions: %1$s by %2$s pixels.","cropError":"There has been an error cropping your image.","audioDetailsTitle":"Audio details","audioReplaceTitle":"Replace audio","audioAddSourceTitle":"Add audio source","audioDetailsCancel":"Cancel edit","videoDetailsTitle":"Video details","videoReplaceTitle":"Replace video","videoAddSourceTitle":"Add video source","videoDetailsCancel":"Cancel edit","videoSelectPosterImageTitle":"Select poster image","videoAddTrackTitle":"Add subtitles","playlistDragInfo":"Drag and drop to reorder tracks.","createPlaylistTitle":"Create audio playlist","editPlaylistTitle":"Edit audio playlist","cancelPlaylistTitle":"\u2190 Cancel audio playlist","insertPlaylist":"Insert audio playlist","updatePlaylist":"Update audio playlist","addToPlaylist":"Add to audio playlist","addToPlaylistTitle":"Add to Audio Playlist","videoPlaylistDragInfo":"Drag and drop to reorder videos.","createVideoPlaylistTitle":"Create video playlist","editVideoPlaylistTitle":"Edit video playlist","cancelVideoPlaylistTitle":"\u2190 Cancel video playlist","insertVideoPlaylist":"Insert video playlist","updateVideoPlaylist":"Update video playlist","addToVideoPlaylist":"Add to video playlist","addToVideoPlaylistTitle":"Add to video Playlist","filterAttachments":"Filter media","attachmentsList":"Media list","settings":{"tabs":[],"tabUrl":"https:\/\/adesoyecollege.org\/wp-admin\/media-upload.php?chromeless=1","mimeTypes":{"image":"Images","audio":"Audio","video":"Video","application\/msword,application\/vnd.openxmlformats-officedocument.wordprocessingml.document,application\/vnd.ms-word.document.macroEnabled.12,application\/vnd.ms-word.template.macroEnabled.12,application\/vnd.oasis.opendocument.text,application\/vnd.apple.pages,application\/pdf,application\/vnd.ms-xpsdocument,application\/oxps,application\/rtf,application\/wordperfect,application\/octet-stream":"Documents","application\/vnd.apple.numbers,application\/vnd.oasis.opendocument.spreadsheet,application\/vnd.ms-excel,application\/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application\/vnd.ms-excel.sheet.macroEnabled.12,application\/vnd.ms-excel.sheet.binary.macroEnabled.12":"Spreadsheets","application\/x-gzip,application\/rar,application\/x-tar,application\/zip,application\/x-7z-compressed":"Archives"},"captions":true,"nonce":{"sendToEditor":"83b32d9590","setAttachmentThumbnail":"407ce3d1e7"},"post":{"id":0},"defaultProps":{"link":"none","align":"","size":""},"attachmentCounts":{"audio":1,"video":1},"oEmbedProxyUrl":"https:\/\/adesoyecollege.org\/wp-json\/oembed\/1.0\/proxy","embedExts":["mp3","ogg","flac","m4a","wav","mp4","m4v","webm","ogv","flv"],"embedMimes":{"mp3":"audio\/mpeg","ogg":"audio\/ogg","flac":"audio\/flac","m4a":"audio\/mpeg","wav":"audio\/wav","mp4":"video\/mp4","m4v":"video\/mp4","webm":"video\/webm","ogv":"video\/ogg","flv":"video\/x-flv"},"contentWidth":null,"months":[{"year":"2024","month":"5","text":"May 2024"},{"year":"2024","month":"4","text":"April 2024"},{"year":"2024","month":"3","text":"March 2024"},{"year":"2024","month":"2","text":"February 2024"},{"year":"2024","month":"1","text":"January 2024"},{"year":"2023","month":"11","text":"November 2023"},{"year":"2023","month":"10","text":"October 2023"},{"year":"2023","month":"9","text":"September 2023"},{"year":"2023","month":"8","text":"August 2023"},{"year":"2023","month":"7","text":"July 2023"},{"year":"2023","month":"6","text":"June 2023"},{"year":"2023","month":"5","text":"May 2023"},{"year":"2023","month":"3","text":"March 2023"},{"year":"2023","month":"1","text":"January 2023"},{"year":"2022","month":"11","text":"November 2022"},{"year":"2022","month":"10","text":"October 2022"},{"year":"2022","month":"9","text":"September 2022"},{"year":"2022","month":"8","text":"August 2022"},{"year":"2022","month":"7","text":"July 2022"},{"year":"2022","month":"6","text":"June 2022"},{"year":"2022","month":"5","text":"May 2022"},{"year":"2022","month":"4","text":"April 2022"},{"year":"2022","month":"3","text":"March 2022"},{"year":"2022","month":"2","text":"February 2022"},{"year":"2022","month":"1","text":"January 2022"},{"year":"2021","month":"11","text":"November 2021"},{"year":"2021","month":"10","text":"October 2021"},{"year":"2021","month":"9","text":"September 2021"},{"year":"2021","month":"8","text":"August 2021"},{"year":"2021","month":"3","text":"March 2021"},{"year":"2021","month":"2","text":"February 2021"},{"year":"2021","month":"1","text":"January 2021"},{"year":"2020","month":"12","text":"December 2020"},{"year":"2020","month":"11","text":"November 2020"},{"year":"2020","month":"10","text":"October 2020"},{"year":"2020","month":"9","text":"September 2020"},{"year":"2020","month":"8","text":"August 2020"},{"year":"2020","month":"7","text":"July 2020"},{"year":"2020","month":"6","text":"June 2020"},{"year":"2020","month":"4","text":"April 2020"}],"mediaTrash":0,"infiniteScrolling":0}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/media-views.js?ver=6.5.4" id="media-views-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/media-editor.js?ver=6.5.4" id="media-editor-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/media-audiovideo.js?ver=6.5.4" id="media-audiovideo-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/bootstrap.min.js?ver=6.5.4" id="bootstrap-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/jquery.magnific-popup.min.js?ver=6.5.4" id="magnific-popup-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/loopcounter.js?ver=6.5.4" id="loopcounter-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/jquery.prettySocial.min.js?ver=6.5.4" id="prettySocial-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/ajax-booking-btn.js?ver=6.5.4" id="ajax-booking-btn-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/comment-reply.js?ver=6.5.4" id="comment-reply-js" async="async" data-wp-strategy="async"></script>
+<script type="text/javascript" id="unique-style-js-extra">
+/* <![CDATA[ */
+var thm_edc = {"thm_mmc_right":"0"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/themes/wpeducon/js/main.js?ver=6.5.4" id="unique-style-js"></script>
+<script type="text/javascript" id="eael-general-js-extra">
+/* <![CDATA[ */
+var localize = {"ajaxurl":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","nonce":"2f6bbd4383","i18n":{"added":"Added ","compare":"Compare","loading":"Loading..."},"eael_translate_text":{"required_text":"is a required field","invalid_text":"Invalid","billing_text":"Billing","shipping_text":"Shipping","fg_mfp_counter_text":"of"},"page_permalink":"https:\/\/adesoyecollege.org\/","cart_redirectition":"no","cart_page_url":"","el_breakpoints":{"mobile":{"label":"Mobile Portrait","value":767,"default_value":767,"direction":"max","is_enabled":true},"mobile_extra":{"label":"Mobile Landscape","value":880,"default_value":880,"direction":"max","is_enabled":false},"tablet":{"label":"Tablet Portrait","value":1059,"default_value":1024,"direction":"max","is_enabled":true},"tablet_extra":{"label":"Tablet Landscape","value":1200,"default_value":1200,"direction":"max","is_enabled":false},"laptop":{"label":"Laptop","value":1366,"default_value":1366,"direction":"max","is_enabled":false},"widescreen":{"label":"Widescreen","value":2400,"default_value":2400,"direction":"min","is_enabled":false}}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/essential-addons-for-elementor-lite/assets/front-end/js/view/general.min.js?ver=5.8.9" id="eael-general-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/uploads/essential-addons-elementor/eael-6089.js?ver=1709810139" id="eael-6089-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor-pro/assets/lib/smartmenus/jquery.smartmenus.js?ver=1.2.1" id="smartmenus-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-includes/js/imagesloaded.min.js?ver=5.0.0" id="imagesloaded-js"></script>
+<script type="text/javascript" src="https://getchat.app/assets/js/wp/min/getchatapp.js?ver=1.2.02" id="get-chat-app-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor-pro/assets/js/webpack-pro.runtime.js?ver=3.21.3" id="elementor-pro-webpack-runtime-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor/assets/js/webpack.runtime.js?ver=3.21.8" id="elementor-webpack-runtime-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor/assets/js/frontend-modules.js?ver=3.21.8" id="elementor-frontend-modules-js"></script>
+<script type="text/javascript" id="elementor-pro-frontend-js-before">
+/* <![CDATA[ */
+var ElementorProFrontendConfig = {"ajaxurl":"https:\/\/adesoyecollege.org\/wp-admin\/admin-ajax.php","nonce":"84e94eb888","urls":{"assets":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/elementor-pro\/assets\/","rest":"https:\/\/adesoyecollege.org\/wp-json\/"},"shareButtonsNetworks":{"facebook":{"title":"Facebook","has_counter":true},"twitter":{"title":"Twitter"},"linkedin":{"title":"LinkedIn","has_counter":true},"pinterest":{"title":"Pinterest","has_counter":true},"reddit":{"title":"Reddit","has_counter":true},"vk":{"title":"VK","has_counter":true},"odnoklassniki":{"title":"OK","has_counter":true},"tumblr":{"title":"Tumblr"},"digg":{"title":"Digg"},"skype":{"title":"Skype"},"stumbleupon":{"title":"StumbleUpon","has_counter":true},"mix":{"title":"Mix"},"telegram":{"title":"Telegram"},"pocket":{"title":"Pocket","has_counter":true},"xing":{"title":"XING","has_counter":true},"whatsapp":{"title":"WhatsApp"},"email":{"title":"Email"},"print":{"title":"Print"},"x-twitter":{"title":"X"},"threads":{"title":"Threads"}},
+"facebook_sdk":{"lang":"en_US","app_id":""},"lottie":{"defaultAnimationUrl":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/elementor-pro\/modules\/lottie\/assets\/animations\/default.json"}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor-pro/assets/js/frontend.js?ver=3.21.3" id="elementor-pro-frontend-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor/assets/lib/waypoints/waypoints.js?ver=4.0.2" id="elementor-waypoints-js"></script>
+<script type="text/javascript" id="elementor-frontend-js-before">
+/* <![CDATA[ */
+var elementorFrontendConfig = {"environmentMode":{"edit":false,"wpPreview":false,"isScriptDebug":true},"i18n":{"shareOnFacebook":"Share on Facebook","shareOnTwitter":"Share on Twitter","pinIt":"Pin it","download":"Download","downloadImage":"Download image","fullscreen":"Fullscreen","zoom":"Zoom","share":"Share","playVideo":"Play Video","previous":"Previous","next":"Next","close":"Close","a11yCarouselWrapperAriaLabel":"Carousel | Horizontal scrolling: Arrow Left & Right","a11yCarouselPrevSlideMessage":"Previous slide","a11yCarouselNextSlideMessage":"Next slide","a11yCarouselFirstSlideMessage":"This is the first slide","a11yCarouselLastSlideMessage":"This is the last slide","a11yCarouselPaginationBulletMessage":"Go to slide"},"is_rtl":false,"breakpoints":{"xs":0,"sm":480,"md":768,"lg":1060,"xl":1440,"xxl":1600},"responsive":{"breakpoints":{"mobile":{"label":"Mobile Portrait","value":767,"default_value":767,"direction":"max","is_enabled":true},"mobile_extra":{"label":"Mobile Landscape","value":880,"default_value":880,"direction":"max","is_enabled":false},"tablet":{"label":"Tablet Portrait","value":1059,"default_value":1024,"direction":"max","is_enabled":true},"tablet_extra":{"label":"Tablet Landscape","value":1200,"default_value":1200,"direction":"max","is_enabled":false},"laptop":{"label":"Laptop","value":1366,"default_value":1366,"direction":"max","is_enabled":false},"widescreen":{"label":"Widescreen","value":2400,"default_value":2400,"direction":"min","is_enabled":false}}},
+"version":"3.21.8","is_static":false,"experimentalFeatures":{"e_optimized_assets_loading":true,"e_optimized_css_loading":true,"e_font_icon_svg":true,"additional_custom_breakpoints":true,"container":true,"e_swiper_latest":true,"container_grid":true,"theme_builder_v2":true,"home_screen":true,"editor_v2":true,"ai-layout":true,"landing-pages":true,"nested-elements":true,"e_lazyload":true,"form-submissions":true},"urls":{"assets":"https:\/\/adesoyecollege.org\/wp-content\/plugins\/elementor\/assets\/"},"swiperClass":"swiper","settings":{"page":[],"editorPreferences":[]},"kit":{"viewport_tablet":1059,"viewport_mobile":767,"active_breakpoints":["viewport_mobile","viewport_tablet"],"global_image_lightbox":"yes","lightbox_enable_counter":"yes","lightbox_enable_fullscreen":"yes","lightbox_enable_zoom":"yes","lightbox_enable_share":"yes","lightbox_title_src":"title","lightbox_description_src":"description"},"post":{"id":6089,"title":"Adesoye%20College%20Offa%20%E2%80%93%20Excellence","excerpt":"","featuredImage":false}};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor/assets/js/frontend.js?ver=3.21.8" id="elementor-frontend-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor-pro/assets/js/elements-handlers.js?ver=3.21.3" id="pro-elements-handlers-js"></script>
+<script type="text/javascript" src="https://adesoyecollege.org/wp-content/plugins/elementor-pro/assets/lib/sticky/jquery.sticky.js?ver=3.21.3" id="e-sticky-js"></script>
+<!--script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var gcaMain = new GetChatApp({
+            'platforms' : {
+                'whatsapp' : true,
+                'facebook' : false,
+                'email' :  false,
+                'instagram' : false,
+                'telegram' : false,
+                'tiktok' : false,
+                'x' : false,
+                'linkedin' : false,
+                'phone' : false,
+                'customLink' : false,
+            },
+            
+            'mobileNumber' : '+2348061522412',
+            'titleMessage' : '&#x1f44b; Get fast response via WhatsApp!',
+            'welcomeMessage': 'Hey there!&#x1f64c;&lt;br /&gt;\n&lt;br /&gt;\n&lt;br /&gt;\n&lt;br /&gt;\nGet in touch with us by typing a message here. We will get your message in light speed! &#x1f525;&lt;br /&gt;\n&lt;br /&gt;\n&lt;br /&gt;\n&lt;br /&gt;\n~ACO Offa',
+
+            'facebookPageId' : 'adesoyecollegeoffaexcellence',
+            'facebookMessage': 'Hey there!\n\nHow can I help you today?',
+            'facebookReplyTime' : 'a day',
+
+            'gcaEmailAddress' : '',
+            'gcaEmailSubject' : '',
+
+            'gcaInstagramUsername' : '',
+
+            'gcaTelegramUsername' : '',
+            
+            'gcaTiktokUsername' : '',
+            
+            'gcaXUsername' : '',
+            
+            'gcaLinkedinUsername' : '',
+            
+            'gcaPhoneNumber' : '',
+            
+            'gcaCustomLink' : '',
+            
+            'position' : 'right',
+        });
+    });
+</script>
+
+        <div data-elementor-type="popup" data-elementor-id="10618" class="elementor elementor-10618 elementor-location-popup" data-elementor-settings="{&quot;a11y_navigation&quot;:&quot;yes&quot;,&quot;triggers&quot;:[],&quot;timing&quot;:[]}" data-elementor-post-type="elementor_library">
+            <section class="elementor-section elementor-top-section elementor-element elementor-element-70973a4 elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="70973a4" data-element_type="section">
+                <div class="elementor-container elementor-column-gap-default">
+            <div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-c251912" data-id="c251912" data-element_type="column">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-425b4b0 elementor-widget elementor-widget-image" data-id="425b4b0" data-element_type="widget" data-widget_type="image.default">
+        <div class="elementor-widget-container">
+                                            <img width="568" height="802" src="https://adesoyecollege.org/wp-content/uploads/2023/08/Adesoye-College-NurPry-e1693218869226.jpeg" class="attachment-medium_large size-medium_large wp-image-10617" alt="" srcset="https://adesoyecollege.org/wp-content/uploads/2023/08/Adesoye-College-NurPry-e1693218869226.jpeg 568w, https://adesoyecollege.org/wp-content/uploads/2023/08/Adesoye-College-NurPry-e1693218869226-212x300.jpeg 212w" sizes="(max-width: 568px) 100vw, 568px" />													</div>
+        </div>
+            </div>
+</div>
+            </div>
+</section>
+        </div>
+        <div data-elementor-type="popup" data-elementor-id="10930" class="elementor elementor-10930 elementor-location-popup" data-elementor-settings="{&quot;a11y_navigation&quot;:&quot;yes&quot;,&quot;triggers&quot;:[],&quot;timing&quot;:[]}" data-elementor-post-type="elementor_library">
+    <div class="elementor-element elementor-element-0ca3cdc e-flex e-con-boxed e-con e-parent" data-id="0ca3cdc" data-element_type="container">
+            <div class="e-con-inner">
+        <div class="elementor-element elementor-element-0822cb0 elementor-widget elementor-widget-image" data-id="0822cb0" data-element_type="widget" data-widget_type="image.default">
+        <div class="elementor-widget-container">
+                                            <img width="653" height="924" src="https://adesoyecollege.org/wp-content/uploads/2024/01/2024-admissionflyer1-724x1024.jpg" class="attachment-large size-large wp-image-10929" alt="" srcset="https://adesoyecollege.org/wp-content/uploads/2024/01/2024-admissionflyer1-scaled.jpg 653w, https://adesoyecollege.org/wp-content/uploads/2024/01/2024-admissionflyer1-212x300.jpg 212w" sizes="(max-width: 653px) 100vw, 653px" />													</div>
+        </div>
+            </div>
+        </div>
+        </div>
+        <div data-elementor-type="popup" data-elementor-id="8498" class="elementor elementor-8498 elementor-location-popup" data-elementor-settings="{&quot;a11y_navigation&quot;:&quot;yes&quot;,&quot;triggers&quot;:{&quot;page_load&quot;:&quot;yes&quot;,&quot;inactivity&quot;:&quot;yes&quot;,&quot;page_load_delay&quot;:0,&quot;inactivity_time&quot;:30},&quot;timing&quot;:{&quot;sources&quot;:&quot;yes&quot;,&quot;devices&quot;:&quot;yes&quot;,&quot;browsers&quot;:&quot;yes&quot;,&quot;sources_sources&quot;:[&quot;search&quot;,&quot;external&quot;,&quot;internal&quot;],&quot;devices_devices&quot;:[&quot;desktop&quot;,&quot;mobile&quot;,&quot;tablet&quot;],&quot;browsers_browsers&quot;:&quot;all&quot;}}" data-elementor-post-type="elementor_library">
+            <section class="elementor-section elementor-top-section elementor-element elementor-element-1fd5e87 elementor-section-boxed elementor-section-height-default elementor-section-height-default" data-id="1fd5e87" data-element_type="section">
+                <div class="elementor-container elementor-column-gap-default">
+            <div class="elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-3d1c4d6" data-id="3d1c4d6" data-element_type="column" data-settings="{&quot;background_background&quot;:&quot;gradient&quot;}">
+    <div class="elementor-widget-wrap elementor-element-populated">
+                <div class="elementor-element elementor-element-8bfc8b5 elementor-widget elementor-widget-image" data-id="8bfc8b5" data-element_type="widget" data-widget_type="image.default">
+        <div class="elementor-widget-container">
+                                                <a href="https://adesoyecollege.org/wp-content/uploads/2024/05/admission_flier_center.png" target="_blank">
+                    <img src="https://adesoyecollege.org/wp-content/uploads/2024/05/admission_flier_center.png" title="" alt="" loading="lazy" />								</a>
+                                            </div>
+        </div>
+            </div>
+</div>
+            </div>
+</section>
+        </div>
+            <script type='text/javascript'>
+        const lazyloadRunObserver = () => {
+            const lazyloadBackgrounds = document.querySelectorAll( `.e-con.e-parent:not(.e-lazyloaded)` );
+            const lazyloadBackgroundObserver = new IntersectionObserver( ( entries ) => {
+                entries.forEach( ( entry ) => {
+                    if ( entry.isIntersecting ) {
+                        let lazyloadBackground = entry.target;
+                        if( lazyloadBackground ) {
+                            lazyloadBackground.classList.add( 'e-lazyloaded' );
+                        }
+                        lazyloadBackgroundObserver.unobserve( entry.target );
+                    }
+                });
+            }, { rootMargin: '200px 0px 200px 0px' } );
+            lazyloadBackgrounds.forEach( ( lazyloadBackground ) => {
+                lazyloadBackgroundObserver.observe( lazyloadBackground );
+            } );
+        };
+        const events = [
+            'DOMContentLoaded',
+            'elementor/lazyload/observe',
+        ];
+        events.forEach( ( event ) => {
+            document.addEventListener( event, lazyloadRunObserver );
+        } );
+    </script>
+    
+<script type="text/html" id="tmpl-media-frame">
+<div class="media-frame-title" id="media-frame-title"></div>
+<h2 class="media-frame-menu-heading">Actions</h2>
+<button type="button" class="button button-link media-frame-menu-toggle" aria-expanded="false">
+    Menu			<span class="dashicons dashicons-arrow-down" aria-hidden="true"></span>
+</button>
+<div class="media-frame-menu"></div>
+<div class="media-frame-tab-panel">
+    <div class="media-frame-router"></div>
+    <div class="media-frame-content"></div>
+</div>
+<h2 class="media-frame-actions-heading screen-reader-text">
+Selected media actions		</h2>
+<div class="media-frame-toolbar"></div>
+<div class="media-frame-uploader"></div>
+</script-->
+</html>
